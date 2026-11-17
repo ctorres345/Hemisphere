@@ -1,4 +1,5 @@
 # core:designsystem defines the color tokens, so it may call Color(...). The temp-file rules stay.
+# Detekt replaces lists instead of merging them: keep this list in step with detekt.yml.
 style:
   ForbiddenMethodCall:
     active: true

@@ -13,16 +13,12 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
             pluginManager.apply("com.android.application")
             pluginManager.apply("org.jetbrains.kotlin.plugin.compose")
             extensions.configure<ApplicationExtension> {
+                configureAndroidCommon(this)
                 namespace = "io.github.ctorres345.hemisphere"
-                compileSdk = libs.version("android-compileSdk").toInt()
                 defaultConfig {
                     applicationId = "io.github.ctorres345.hemisphere"
                     minSdk = libs.version("android-minSdk").toInt()
                     targetSdk = libs.version("android-targetSdk").toInt()
-                }
-                compileOptions {
-                    sourceCompatibility = javaVersion()
-                    targetCompatibility = javaVersion()
                 }
                 buildFeatures.compose = true
                 // F-Droid rebuilds the APK and compares it with ours (ADR 0003). The dependency-info block
@@ -31,7 +27,6 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                     includeInApk = false
                     includeInBundle = false
                 }
-                lint { configureHemisphereLint() }
             }
             configureKotlin()
             configureQuality()

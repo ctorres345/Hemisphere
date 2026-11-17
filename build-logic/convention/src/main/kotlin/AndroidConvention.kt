@@ -1,8 +1,17 @@
+import com.android.build.api.dsl.CommonExtension
 import com.android.build.api.dsl.Lint
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 
 internal fun Project.javaVersion(): JavaVersion = JavaVersion.toVersion(libs.version("jdk"))
+
+/** SDK, Java level and lint shared by the app and every Android library. */
+internal fun Project.configureAndroidCommon(android: CommonExtension) {
+    android.compileSdk = libs.version("android-compileSdk").toInt()
+    android.compileOptions.sourceCompatibility = javaVersion()
+    android.compileOptions.targetCompatibility = javaVersion()
+    android.lint.configureHemisphereLint()
+}
 
 /** Android Lint is part of `./gradlew check`; a warning fails the build. */
 internal fun Lint.configureHemisphereLint() {

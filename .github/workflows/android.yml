@@ -33,8 +33,11 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      # Validates the wrapper checksum and caches Gradle and the build cache. Only main and mvp write it.
+      # Validates the wrapper checksum and caches Gradle and the build cache. Pushes to main and mvp write
+      # the cache; PR runs only read it.
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
 
       - name: Build the debug APK
         run: ./gradlew assembleDebug --console=plain
@@ -54,6 +57,8 @@ jobs:
           java-version: 17
 
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
 
       # The same command as [check] in .nousfx/project.toml, which the review gate runs.
       - name: Run tests and lint

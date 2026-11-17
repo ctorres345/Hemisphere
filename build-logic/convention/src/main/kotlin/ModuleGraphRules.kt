@@ -35,16 +35,7 @@ internal object ModuleGraphRules {
 
     enum class Scope { API, IMPLEMENTATION, TEST }
 
-    data class Edge(val from: String, val scope: Scope, val to: String, val configuration: String) {
-        fun encode() = listOf(from, scope.name, to, configuration).joinToString("|")
-
-        companion object {
-            fun decode(text: String): Edge {
-                val (from, scope, to, configuration) = text.split("|")
-                return Edge(from, Scope.valueOf(scope), to, configuration)
-            }
-        }
-    }
+    data class Edge(val from: String, val scope: Scope, val to: String, val configuration: String)
 
     /**
      * The scope of a declarable configuration such as `implementation`, `debugApi` or `testImplementation`,

@@ -3,6 +3,7 @@ import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import com.android.build.api.variant.AndroidComponentsExtension
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
+import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
 import org.jlleitschuh.gradle.ktlint.KtlintExtension
@@ -37,6 +38,11 @@ internal fun Project.configureQuality() {
     }
 
     pluginManager.withPlugin("com.android.base") { registerTypedDetekt(configFiles) }
+    // On JVM modules the plugin adds `detektMain` (with types) but leaves it out of `check`.
+    pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
+        tasks.named("check").configure { dependsOn("detektMain") }
+        limitPlainDetektToTests()
+    }
 
     extensions.configure<KtlintExtension> {
         version.set(libs.version("ktlint"))
@@ -55,12 +61,20 @@ private fun Project.registerTypedDetekt(configFiles: List<java.io.File>) {
         val task =
             tasks.register<Detekt>("detektDebugTyped") {
                 description = "Runs detekt with type resolution on the debug variant."
-                source(layout.projectDirectory.dir("src/main/kotlin"), layout.projectDirectory.dir("src/debug/kotlin"))
+                source(listOf("main", "debug").flatMap { listOf("src/$it/kotlin", "src/$it/java") }.map(layout.projectDirectory::dir))
                 classpath.setFrom(variant.compileClasspath, components.sdkComponents.bootClasspath)
                 config.setFrom(configFiles)
                 buildUponDefaultConfig = true
                 reports.sarif.required.set(false)
             }
         tasks.named("check").configure { dependsOn(task) }
+    }
+    limitPlainDetektToTests()
+}
+
+/** The plain `detekt` task would analyse main sources a second time without types; keep it on tests. */
+private fun Project.limitPlainDetektToTests() {
+    tasks.named<Detekt>("detekt").configure {
+        setSource(files("src/test/kotlin", "src/test/java"))
     }
 }

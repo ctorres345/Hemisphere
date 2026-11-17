@@ -1,4 +1,5 @@
 # core:fs is the one module that touches java.io.File and temp files (ADR 0006).
+# Detekt replaces lists instead of merging them: keep this list in step with detekt.yml.
 # Only the Color rule stays.
 style:
   ForbiddenImport:

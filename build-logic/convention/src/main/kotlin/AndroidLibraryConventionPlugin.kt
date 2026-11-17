@@ -9,14 +9,9 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
         with(target) {
             pluginManager.apply("com.android.library")
             extensions.configure<LibraryExtension> {
+                configureAndroidCommon(this)
                 namespace = hemisphereNamespace
-                compileSdk = libs.version("android-compileSdk").toInt()
                 defaultConfig.minSdk = libs.version("android-minSdk").toInt()
-                compileOptions {
-                    sourceCompatibility = javaVersion()
-                    targetCompatibility = javaVersion()
-                }
-                lint { configureHemisphereLint() }
             }
             configureKotlin()
             configureQuality()

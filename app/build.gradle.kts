@@ -21,3 +21,16 @@ dependencies {
     testImplementation(project(":core:testing"))
     testImplementation(libs.konsist)
 }
+
+// Konsist reads every module's sources from disk, so they are inputs of the tests that run it;
+// otherwise the build cache could skip the layer rules after a source-only change.
+tasks.withType<Test>().configureEach {
+    inputs
+        .files(
+            rootProject.fileTree(rootDir) {
+                include("*/src/**/*.kt", "*/*/src/**/*.kt")
+                exclude("**/build/**")
+            },
+        ).withPropertyName("konsistSources")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+}

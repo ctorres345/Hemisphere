@@ -26,5 +26,11 @@ updates:
         patterns: ["com.android.tools.build*", "com.android.application", "com.android.library"]
       androidx:
         patterns: ["androidx.*"]
+    # These need compileSdk 37; drop the ignores in the targetSdk 37 bump (see gradle/libs.versions.toml).
+    ignore:
+      - dependency-name: "androidx.core:core-ktx"
+        versions: [">=1.19.0"]
+      - dependency-name: "androidx.compose:compose-bom"
+        versions: [">=2026.08.00"]
     commit-message:
       prefix: build

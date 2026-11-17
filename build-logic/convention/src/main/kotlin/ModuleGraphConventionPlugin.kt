@@ -33,11 +33,8 @@ class ModuleGraphConventionPlugin : Plugin<Project> {
             val modules = target.subprojects.filter { it.buildFile.exists() }
             val edges = modules.flatMap { it.declaredEdges() }
             val compose = modules.filter { it.path in ModuleGraphRules.noCompose }.flatMap { it.composeUses() }
-            task.configure {
-                projects.set(modules.map { it.path })
-                this.edges.set(edges.map { it.encode() })
-                composeUsers.set(compose)
-            }
+            val errors = ModuleGraphRules.violations(modules.map { it.path }, edges, compose)
+            task.configure { violations.set(errors) }
         }
     }
 }
@@ -55,33 +52,24 @@ private fun Project.composeUses(): List<String> {
     val libraries =
         configurations.flatMap { configuration ->
             configuration.dependencies.withType(ExternalDependency::class.java)
-                .filter { it.group?.startsWith("androidx.compose") == true }
+                // activity-compose, lifecycle-viewmodel-compose and the like pull Compose in from other groups.
+                .filter { it.group?.startsWith("androidx.compose") == true || "compose" in it.name }
                 .map { "$path -> ${it.group}:${it.name} (${configuration.name})" }
         }
     return plugin + libraries
 }
 
 abstract class ModuleGraphCheckTask : DefaultTask() {
+    /** Computed from the evaluated projects; the task only reports them. */
     @get:Input
-    abstract val projects: ListProperty<String>
-
-    @get:Input
-    abstract val edges: ListProperty<String>
-
-    @get:Input
-    abstract val composeUsers: ListProperty<String>
+    abstract val violations: ListProperty<String>
 
     @get:OutputFile
     abstract val report: RegularFileProperty
 
     @TaskAction
     fun check() {
-        val errors =
-            ModuleGraphRules.violations(
-                projects = projects.get(),
-                edges = edges.get().map(ModuleGraphRules.Edge::decode),
-                composeUsers = composeUsers.get(),
-            )
+        val errors = violations.get()
         val text = if (errors.isEmpty()) "Module graph matches docs/architecture.md §2.\n" else errors.joinToString("\n", postfix = "\n")
         report.get().asFile.writeText(text)
         if (errors.isNotEmpty()) {

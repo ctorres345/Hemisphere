@@ -31,10 +31,6 @@ gradlePlugin {
             id = "hemisphere.android.library.compose"
             implementationClass = "AndroidLibraryComposeConventionPlugin"
         }
-        register("androidFeature") {
-            id = "hemisphere.android.feature"
-            implementationClass = "AndroidFeatureConventionPlugin"
-        }
         register("androidApplication") {
             id = "hemisphere.android.application"
             implementationClass = "AndroidApplicationConventionPlugin"
