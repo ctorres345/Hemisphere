@@ -17,16 +17,16 @@
 /* ---------- Page chrome (not part of the app design) ---------- */
 :root {
   --pg-bg: #EEEFF1; --pg-panel: #FFFFFF; --pg-line: #DADBDF; --pg-fg: #16171A; --pg-fg2: #5E6168;
-  --pg-sel: #16171A; --pg-onsel: #FFFFFF; --pg-bezel: #1B1C1F; --pg-focus: #2F5BD3;
+  --pg-sel: #16171A; --pg-onsel: #FFFFFF; --pg-bezel: #1B1C1F; --pg-focus: #2E5FD6;
   --pg-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --pg-bg: #0C0D0F; --pg-panel: #16171A; --pg-line: #2A2C30; --pg-fg: #E9E9EB; --pg-fg2: #A3A5AA;
-  --pg-sel: #E9E9EB; --pg-onsel: #111214; --pg-bezel: #2A2B2F; --pg-focus: #8AA8F8; color-scheme: dark; } }
+  --pg-sel: #E9E9EB; --pg-onsel: #111214; --pg-bezel: #2A2B2F; --pg-focus: #80A9FE; color-scheme: dark; } }
 :root[data-theme="dark"] {
   --pg-bg: #0C0D0F; --pg-panel: #16171A; --pg-line: #2A2C30; --pg-fg: #E9E9EB; --pg-fg2: #A3A5AA;
-  --pg-sel: #E9E9EB; --pg-onsel: #111214; --pg-bezel: #2A2B2F; --pg-focus: #8AA8F8; color-scheme: dark; }
+  --pg-sel: #E9E9EB; --pg-onsel: #111214; --pg-bezel: #2A2B2F; --pg-focus: #80A9FE; color-scheme: dark; }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 body { background: var(--pg-bg); color: var(--pg-fg); font: 14px/1.45 var(--pg-font); }
@@ -66,7 +66,7 @@ button { font: inherit; color: inherit; }
   --ft-folder: #5B6B8C; --ft-image: #2F7D6B; --ft-video: #8A4FA0; --ft-audio: #A0522D; --ft-archive: #8C6A1F;
   --ft-apk: #4F7F2F; --ft-rom: #B03A5B; --ft-doc: #3D6FA3; --ft-code: #5A5F6B; --ft-other: #6E7075;
   /* accent (blue, tokens/color.light.json); JS swaps these per picked accent */
-  --a-fill: #2E5FD6; --a-on: #FFFFFF; --a-text: #2E5FD6; --a-focus: #2E5FD6;
+  --a-fill: #2E5FD6; --a-on: #FFFFFF; --a-text: var(--a-fill); --a-focus: var(--a-fill);
   --a-tint: color-mix(in srgb, var(--a-fill) 12%, var(--raised));
   /* type: section 6 */
   --f-title: 500 20px/28px var(--app-font); --f-heading: 500 16px/22px var(--app-font); --f-body: 400 14px/20px var(--app-font);
@@ -602,7 +602,6 @@ function render() {
   dev.dataset.tray = S.clip && S.layout === 'single' && !S.settings && !tabOf(curPane()).sel.length ? '1' : ''; dev.dataset.snack = S.snack && !S.overlay ? '1' : '';
   const a = ACCENTS[S.accent], dark = S.theme !== 'light';
   dev.style.setProperty('--a-fill', dark ? a[2] : a[0]); dev.style.setProperty('--a-on', dark ? a[3] : a[1]);
-  dev.style.setProperty('--a-text', dark ? a[2] : a[0]); dev.style.setProperty('--a-focus', dark ? a[2] : a[0]);
   const main = S.layout === 'dual' ? dualHTML() : (S.settings ? settingsHTML() : singleHTML());
   dev.innerHTML = `<div class="sbar" aria-hidden="true"><span>16:07</span><span>82%</span></div>${main}${hintsHTML()}${S.device === 'phone' ? '<div class="navbar" aria-hidden="true"><i></i></div>' : ''}${overlayHTML()}`;
   dev.querySelectorAll('[data-scroll]').forEach(el => { if (saved[el.dataset.scroll] != null) el.scrollTop = saved[el.dataset.scroll]; });
@@ -861,7 +860,18 @@ function notes() {
     <p class="pad-status">${pads.length ? 'Controller connected. Its buttons work too.' : 'A real controller works too: plug it in and press a button.'} Any key switches to gamepad mode; a tap or click switches back to touch.</p>`;
 }
 
-SCREENS.single();
+// Optional start state from the URL, for screenshots: index.html#screen=select&device=handheld&active=1&input=pad&theme=amoled&accent=green
+(() => {
+  const q = new URLSearchParams(location.hash.slice(1)), pick = (k, ok) => ok.includes(q.get(k)) ? q.get(k) : null;
+  const device = pick('device', ['phone', 'handheld']);
+  if (device) { S.device = device; S.layout = device === 'handheld' ? 'dual' : 'single'; }
+  S.screen = pick('screen', Object.keys(SCREENS)) || S.layout;
+  SCREENS[S.screen]();
+  const theme = pick('theme', ['light', 'dark', 'amoled']); if (theme) { S.theme = theme; S.themeChoice = theme; }
+  const input = pick('input', ['touch', 'pad']); if (input) S.input = input;
+  const accent = pick('accent', Object.keys(ACCENTS)); if (accent) S.accent = accent;
+  if (S.layout === 'dual' && q.get('active') === '1') { S.active = 1; S.focus = null; }
+})();
 render();
 if (document.fonts) document.fonts.ready.then(fit);
 </script>

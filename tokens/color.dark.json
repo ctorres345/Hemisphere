@@ -59,10 +59,10 @@
           "$description": "accent.fill mixed 18% into surface.raised (sRGB)."
         },
         "focus": {
-          "$value": "#80A9FE"
+          "$value": "{color.accent.blue.fill}"
         },
         "text": {
-          "$value": "#80A9FE"
+          "$value": "{color.accent.blue.fill}"
         }
       },
       "teal": {
@@ -77,10 +77,10 @@
           "$description": "accent.fill mixed 18% into surface.raised (sRGB)."
         },
         "focus": {
-          "$value": "#65BCB7"
+          "$value": "{color.accent.teal.fill}"
         },
         "text": {
-          "$value": "#65BCB7"
+          "$value": "{color.accent.teal.fill}"
         }
       },
       "green": {
@@ -95,10 +95,10 @@
           "$description": "accent.fill mixed 18% into surface.raised (sRGB)."
         },
         "focus": {
-          "$value": "#87BD68"
+          "$value": "{color.accent.green.fill}"
         },
         "text": {
-          "$value": "#87BD68"
+          "$value": "{color.accent.green.fill}"
         }
       },
       "amber": {
@@ -113,10 +113,10 @@
           "$description": "accent.fill mixed 18% into surface.raised (sRGB)."
         },
         "focus": {
-          "$value": "#C8A752"
+          "$value": "{color.accent.amber.fill}"
         },
         "text": {
-          "$value": "#C8A752"
+          "$value": "{color.accent.amber.fill}"
         }
       },
       "orange": {
@@ -131,10 +131,10 @@
           "$description": "accent.fill mixed 18% into surface.raised (sRGB)."
         },
         "focus": {
-          "$value": "#EF8E5A"
+          "$value": "{color.accent.orange.fill}"
         },
         "text": {
-          "$value": "#EF8E5A"
+          "$value": "{color.accent.orange.fill}"
         }
       },
       "red": {
@@ -149,10 +149,10 @@
           "$description": "accent.fill mixed 18% into surface.raised (sRGB)."
         },
         "focus": {
-          "$value": "#FB7E91"
+          "$value": "{color.accent.red.fill}"
         },
         "text": {
-          "$value": "#FB7E91"
+          "$value": "{color.accent.red.fill}"
         }
       },
       "pink": {
@@ -167,10 +167,10 @@
           "$description": "accent.fill mixed 18% into surface.raised (sRGB)."
         },
         "focus": {
-          "$value": "#ED82B8"
+          "$value": "{color.accent.pink.fill}"
         },
         "text": {
-          "$value": "#ED82B8"
+          "$value": "{color.accent.pink.fill}"
         }
       },
       "violet": {
@@ -185,10 +185,10 @@
           "$description": "accent.fill mixed 18% into surface.raised (sRGB)."
         },
         "focus": {
-          "$value": "#AD98FE"
+          "$value": "{color.accent.violet.fill}"
         },
         "text": {
-          "$value": "#AD98FE"
+          "$value": "{color.accent.violet.fill}"
         }
       }
     }

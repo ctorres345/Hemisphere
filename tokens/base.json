@@ -1,5 +1,5 @@
 {
-  "$description": "Theme-independent tokens from docs/design-system.md sections 6 and 7.",
+  "$description": "Theme-independent tokens from docs/design-system.md sections 6 and 7. A px value here means sp for typography (fontSize, lineHeight) and dp for everything else.",
   "space": {
     "$type": "dimension",
     "xs": {

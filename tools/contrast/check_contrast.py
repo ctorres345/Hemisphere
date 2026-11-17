@@ -10,6 +10,9 @@ combination against WCAG 2.2 contrast:
 Usage: python3 tools/contrast/check_contrast.py [--tokens DIR]
 Exit codes: 0 all pass, 1 a pair fails, 2 a token file is missing or malformed.
 
+A token value is a #RRGGBB color or a DTCG alias to another color token, such as
+{color.accent.blue.fill}.
+
 Standard library only, so CI needs nothing but Python 3.
 """
 
@@ -30,6 +33,7 @@ TEXT = 4.5
 NON_TEXT = 3.0
 
 HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
+ALIAS = re.compile(r"^\{color\.([A-Za-z0-9.]+)\}$")
 DEFAULT_TOKENS = Path(__file__).resolve().parents[2] / "tokens"
 
 
@@ -43,6 +47,7 @@ class Pair:
     bg: str
     minimum: float
     why: str
+    kind: str = "other"  # "text" or "focus" feed the summary line; "other" only labels failures
 
 
 def relative_luminance(hex_color: str) -> float:
@@ -66,19 +71,18 @@ def load_theme(tokens_dir: Path, theme: str) -> dict[str, str]:
         data = json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError as e:
         raise TokenError(f"{path}: missing") from e
-    except json.JSONDecodeError as e:
+    except (json.JSONDecodeError, UnicodeDecodeError) as e:
         raise TokenError(f"{path}: not valid JSON ({e})") from e
+    except OSError as e:
+        raise TokenError(f"{path}: unreadable ({e})") from e
 
-    flat: dict[str, str] = {}
+    raw: dict[str, object] = {}
 
     def walk(node: object, prefix: str) -> None:
         if not isinstance(node, dict):
             return
         if "$value" in node:
-            value = node["$value"]
-            if not isinstance(value, str) or not HEX.match(value):
-                raise TokenError(f"{path}: {prefix} must be a #RRGGBB color, got {value!r}")
-            flat[prefix] = value.upper()
+            raw[prefix] = node["$value"]
             return
         for key, child in node.items():
             if not key.startswith("$"):
@@ -88,6 +92,21 @@ def load_theme(tokens_dir: Path, theme: str) -> dict[str, str]:
     if not isinstance(color, dict):
         raise TokenError(f"{path}: no top-level \"color\" group")
     walk(color, "")
+
+    def resolve(name: str, seen: tuple[str, ...] = ()) -> str:
+        """A #RRGGBB value, following DTCG aliases such as {color.accent.blue.fill}."""
+        value = raw[name]
+        alias = ALIAS.match(value) if isinstance(value, str) else None
+        if alias:
+            target = alias.group(1)
+            if target not in raw or target in seen:
+                raise TokenError(f"{path}: {name} points at {value}, which is missing or circular")
+            return resolve(target, (*seen, name))
+        if not isinstance(value, str) or not HEX.match(value):
+            raise TokenError(f"{path}: {name} must be a #RRGGBB color or an alias, got {value!r}")
+        return value.upper()
+
+    flat = {name: resolve(name) for name in raw}
 
     required = [
         *SURFACES,
@@ -113,25 +132,25 @@ def theme_pairs() -> list[Pair]:
     for s in SURFACES:
         # text.secondary and text.tertiary are also the inactive pane's step-down (section 3).
         for t in ("text.primary", "text.secondary", "text.tertiary"):
-            pairs.append(Pair(t, s, TEXT, "text"))
+            pairs.append(Pair(t, s, TEXT, "text", "text"))
         for t in ("semantic.danger", "semantic.warning", "semantic.success"):
-            pairs.append(Pair(t, s, TEXT, "semantic label"))
+            pairs.append(Pair(t, s, TEXT, "semantic label", "text"))
         pairs.append(Pair("border.strong", s, NON_TEXT, "control boundary"))
     return pairs
 
 
 def accent_pairs(accent: str) -> list[Pair]:
     a = f"accent.{accent}"
-    pairs = [Pair(f"{a}.onFill", f"{a}.fill", TEXT, "label on accent fill")]
+    pairs = [Pair(f"{a}.onFill", f"{a}.fill", TEXT, "label on accent fill", "text")]
     for s in (*SURFACES, f"{a}.tint"):
-        pairs.append(Pair(f"{a}.text", s, TEXT, "accent text"))
-        pairs.append(Pair(f"{a}.focus", s, NON_TEXT, "focus ring"))
-    for s in SURFACES:
+        pairs.append(Pair(f"{a}.text", s, TEXT, "accent text", "text"))
+        pairs.append(Pair(f"{a}.focus", s, NON_TEXT, "focus ring", "focus"))
+    for s in (*SURFACES, f"{a}.tint"):
         pairs.append(Pair(f"{a}.fill", s, NON_TEXT, "accent shape"))
     # Selected rows: names (primary, or secondary in the inactive pane) and meta stay readable.
     # text.tertiary is never used on accent.tint (docs/design-system.md section 3).
     for t in ("text.primary", "text.secondary"):
-        pairs.append(Pair(t, f"{a}.tint", TEXT, "selected row"))
+        pairs.append(Pair(t, f"{a}.tint", TEXT, "selected row", "text"))
     return pairs
 
 
@@ -146,22 +165,23 @@ class Result:
 
 def check(tokens_dir: Path) -> list[Result]:
     results = []
+    shared = theme_pairs()
     for theme in THEMES:
         colors = load_theme(tokens_dir, theme)
-        shared = theme_pairs()
         for accent in ACCENTS:
             failures, text_ratios, focus_ratios = [], [], []
             for p in (*shared, *accent_pairs(accent)):
                 ratio = contrast(colors[p.fg], colors[p.bg])
-                if p.why in ("accent text", "label on accent fill", "selected row"):
+                if p.kind == "text":
                     text_ratios.append(ratio)
-                if p.why == "focus ring":
+                elif p.kind == "focus":
                     focus_ratios.append(ratio)
-                # Round down to 2 decimals so 4.499 never passes as 4.50.
-                if int(ratio * 100) / 100 < p.minimum:
+                # Round down to 2 decimals so 4.499 never passes (or prints) as 4.50.
+                shown = int(ratio * 100) / 100
+                if shown < p.minimum:
                     failures.append(
                         f"{p.fg} {colors[p.fg]} on {p.bg} {colors[p.bg]}: "
-                        f"{ratio:.2f}:1, needs {p.minimum}:1 ({p.why})"
+                        f"{shown:.2f}:1, needs {p.minimum}:1 ({p.why})"
                     )
             results.append(Result(theme, accent, failures, min(text_ratios), min(focus_ratios)))
     return results

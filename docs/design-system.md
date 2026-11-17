@@ -89,7 +89,9 @@ Auto is a heuristic: a known-device table keyed by `InputDevice` vendor/product 
   down one token (`text.primary` → `text.secondary`, `text.secondary` → `text.tertiary`) instead
   of using opacity, and those pairs are in the contrast matrix. On a selected row (`accent.tint`)
   the inactive pane steps only the name down; size and date stay `text.secondary`, because
-  `text.tertiary` is too faint on the tint (under 4:1 in Dark and AMOLED).
+  `text.tertiary` is too faint on the tint (below 4.5:1 in every theme: about 4.1:1 in Light,
+  3.5 to 3.8:1 in Dark and AMOLED). `border.strong` is never drawn on the tint either (under 3:1 there):
+  a control on a selected row uses the accent fill for its boundary.
 - **Button-hint footer**: `Ⓐ Open  Ⓑ Back  Ⓧ Menu  Ⓨ Mark  L1/R1 Pane`. Ⓨ is labeled "Mark" so it can't
   be confused with the physical Select button (layout mode).
 
@@ -152,7 +154,8 @@ The values come from `tokens/color.light.json`, `tokens/color.dark.json` and
 
 All 8 accents have the same perceived brightness (OKLCH lightness) within a theme, so none looks
 heavier than the others. Red, amber and green sit a little away from `danger`, `warning` and `success`
-in hue. `accent.focus` and `accent.text` equal `accent.fill` for every accent today.
+in hue. `accent.focus` and `accent.text` are aliases of `accent.fill` (`{color.accent.<name>.fill}`)
+for every accent today.
 
 Final `accent.fill` values (HEM-6). `accent.onFill` is `#FFFFFF` in Light and a dark shade of the
 same hue in Dark and AMOLED; the token files hold every role.
@@ -302,7 +305,8 @@ tokens/*.json  (W3C Design Tokens format)
 The contrast check is `tools/contrast/check_contrast.py` (Python standard library). Run it with
 `python3 tools/contrast/check_contrast.py`; its tests run with
 `python3 -m unittest discover -s tools/contrast`. The `tokens` workflow runs both on PRs that touch
-`tokens/` or `tools/contrast/`. It exits 1 when a pair fails and 2 when a token is missing or not a
+`tokens/`, `tools/contrast/`, this file or the prototype; the tests also fail when the accent table here
+or the prototype's colors no longer match the tokens. The check exits 1 when a pair fails and 2 when a token is missing or not a
 `#RRGGBB` color.
 
 No Figma for now. Throwaway HTML mockups are fine for exploring.
