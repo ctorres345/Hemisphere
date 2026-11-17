@@ -122,4 +122,38 @@ class ModuleGraphRulesTest {
         assertEquals(null, ModuleGraphRules.scopeOf("lintChecks"))
         assertEquals(null, ModuleGraphRules.scopeOf("detekt"))
     }
+
+    @Test
+    fun `core testing is not added to itself or to a module it is built from`() {
+        // Pinned: widening what core:testing may use silently takes core:testing away from more modules.
+        assertEquals(
+            setOf(":core:testing", ":core:model", ":core:fs", ":core:jobs", ":core:data", ":core:platform"),
+            ModuleGraphRules.withoutSharedTesting,
+        )
+    }
+
+    @Test
+    fun `every other module gets core testing`() {
+        assertEquals(
+            setOf(
+                ":app",
+                ":core:designsystem",
+                ":core:domain",
+                ":core:input",
+                ":core:mvi",
+                ":feature:browser",
+                ":feature:jobs",
+                ":feature:settings",
+                ":feature:trash",
+            ),
+            all - ModuleGraphRules.withoutSharedTesting,
+        )
+    }
+
+    @Test
+    fun `a module core testing is built from fails when its tests use core testing`() {
+        val errors = violations(Edge(":core:fs", Scope.TEST, ":core:testing", "testImplementation"))
+        assertEquals(1, errors.size)
+        assertTrue(errors.single().startsWith(":core:fs -> :core:testing"))
+    }
 }

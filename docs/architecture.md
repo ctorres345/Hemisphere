@@ -92,9 +92,12 @@ Rules:
   `core:domain`; the data layer as `implementation` from `core:domain`; and the data layer as
   `api` from `core:testing`. The table lists what a module may use, so an edge it lists that a
   module does not use yet is not required.
-- Feature tests may use `core:testing` (`testImplementation`). It declares `core:fs`,
-  `core:jobs` and `core:data` as `api`, so test code (and only test code) gets the fakes and the
-  data interfaces needed to build real use cases over them.
+- The convention plugins give every module's tests JUnit and `kotlinx-coroutines-test`, and every
+  Android module's tests `core:testing` (`testImplementation`), so build files do not list them.
+  `core:testing` and the modules it is built from (`core:model`, `core:fs`, `core:jobs`,
+  `core:data`, `core:platform`) do not get `core:testing`; the module-graph check fails if one
+  does. `core:testing` declares `core:fs`, `core:jobs` and `core:data` as `api`, so test code (and only test
+  code) gets the fakes and the data interfaces needed to build real use cases over them.
 - `core:domain`, `core:fs`, `core:jobs`, `core:data` and `core:mvi` have no Compose dependency. They are
   tested on the JVM. `core:domain` is an Android library module (its dependencies are), but its
   own code imports nothing from `android.*`.

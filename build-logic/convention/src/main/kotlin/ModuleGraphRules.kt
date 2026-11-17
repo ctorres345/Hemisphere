@@ -30,6 +30,16 @@ internal object ModuleGraphRules {
             ":feature:trash" to featureDeps - ":core:platform",
         )
 
+    /**
+     * `core:testing` and every module it is built from. The convention plugins add `core:testing` to
+     * every other module's tests; adding it here would put a module's own classes on its test
+     * classpath twice, or make `core:testing` depend on itself.
+     */
+    val withoutSharedTesting: Set<String> =
+        generateSequence(setOf(TESTING)) { found ->
+            (found + found.flatMap { allowed[it].orEmpty() }).takeIf { it != found }
+        }.last()
+
     /** Modules that must stay free of Compose (architecture §2) and are tested on the JVM. */
     val noCompose = setOf(MODEL, ":core:domain", MVI) + dataLayer
 
@@ -90,6 +100,8 @@ internal object ModuleGraphRules {
             when {
                 edge.to == TESTING && edge.scope != Scope.TEST ->
                     errors += "$where: core:testing is for test source sets only (testImplementation)."
+                edge.to == TESTING && edge.from in withoutSharedTesting ->
+                    errors += "$where: core:testing is built from ${edge.from}, so its tests cannot use it."
                 edge.to == TESTING -> Unit
                 rule != null && edge.to !in rule ->
                     errors += "$where: not allowed by docs/architecture.md §2."
