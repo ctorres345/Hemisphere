@@ -23,6 +23,14 @@ in one place as features are added.
 - **Domain layer only where logic is shared** (Google's default: the layer is optional).
   Rejected: "only where needed" is a judgment call each time, and the code drifts into two
   styles. One rule for every ViewModel is easier to check with a test.
+- **Use cases and data inside each feature module** ("clean architecture per feature"), checked
+  on 2026-11-17 (HEM-7). Rejected: the rules and data are shared (delete to Trash is used by
+  Browser and Trash, the job queue by every feature), and features cannot depend on each other,
+  so per-feature use cases would be copied or end up in core anyway. Android's modularization
+  guide and Now in Android also keep features as UI plus ViewModel over shared data modules. MVI
+  (state, intents, results, reducer) does live in each feature. `core:domain` is packaged by area
+  (`files`, `jobs`, `trash`, `settings`). Revisit, by splitting `core:domain` into one module per
+  area, when it passes about 40 use cases or a feature brings data no other feature reads.
 - **An MVI library** (Orbit, Mavericks). Rejected for now: a pure `reduce` behind a
   `MutableStateFlow` is a few lines, and it keeps one less dependency to license-check (ADR 0004 rule).
 
