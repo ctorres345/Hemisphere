@@ -85,9 +85,10 @@ fun XxxScreen(state: XxxUiState, onIntent: (XxxIntent) -> Unit, modifier: Modifi
 
 ## Wiring
 
-Until Hilt lands, `app/AppContainer.kt` builds the use cases and `MainActivity` creates the
-ViewModel with `viewModelFactory { initializer { ... } }`. With Hilt, the ViewModel gets
-`@HiltViewModel` and an `@Inject constructor`, and the container goes away.
+Hilt builds everything (architecture §9). The ViewModel gets `@HiltViewModel` and an
+`@Inject constructor`; use cases already have one. The screen gets a `NavKey` in `app` and an
+`entry<XxxKey> { XxxRoute(viewModel = hiltViewModel()) }` in `HemisphereNavHost` (architecture §7).
+The feature module applies `alias(libs.plugins.hemisphere.hilt)`.
 
 ## Checklist
 

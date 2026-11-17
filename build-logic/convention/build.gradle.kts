@@ -14,6 +14,8 @@ dependencies {
     compileOnly(libs.compose.gradlePlugin)
     compileOnly(libs.detekt.gradlePlugin)
     compileOnly(libs.ktlint.gradlePlugin)
+    compileOnly(libs.hilt.gradlePlugin)
+    compileOnly(libs.ksp.gradlePlugin)
     testImplementation(libs.junit)
 }
 
@@ -34,6 +36,10 @@ gradlePlugin {
         register("androidApplication") {
             id = "hemisphere.android.application"
             implementationClass = "AndroidApplicationConventionPlugin"
+        }
+        register("hilt") {
+            id = "hemisphere.hilt"
+            implementationClass = "HiltConventionPlugin"
         }
         register("moduleGraph") {
             id = "hemisphere.module.graph"

@@ -1,5 +1,7 @@
 plugins {
     alias(libs.plugins.hemisphere.android.application)
+    alias(libs.plugins.hemisphere.hilt)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 dependencies {
@@ -20,6 +22,11 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.compose.material3)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.navigation3.ui)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+    implementation(libs.kotlinx.serialization.core)
     implementation(libs.kotlinx.coroutines.core)
     testImplementation(libs.konsist)
 }

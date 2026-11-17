@@ -1,8 +1,8 @@
 package io.github.ctorres345.hemisphere
 
 import android.app.Application
+import dagger.hilt.android.HiltAndroidApp
 
-/** Holds the [AppContainer] for the whole process. Becomes the `@HiltAndroidApp` class later. */
-class HemisphereApplication : Application() {
-    val container: AppContainer by lazy { AppContainer(this) }
-}
+/** The Hilt root (architecture §9): the only `@HiltAndroidApp`. */
+@HiltAndroidApp
+class HemisphereApplication : Application()
