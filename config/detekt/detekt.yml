@@ -1,0 +1,42 @@
+# Detekt rules for every module, on top of detekt's defaults (buildUponDefaultConfig).
+# The rules named in docs/code-guidelines.md. A module can lift a rule in config/detekt/<module>.yml.
+
+coroutines:
+  # Dispatchers are injected (@IoDispatcher), never Dispatchers.IO in app code (architecture §9).
+  InjectDispatcher:
+    active: true
+    dispatcherNames: ['IO', 'Default', 'Unconfined']
+  # Never swallow CancellationException (architecture §3).
+  SuspendFunSwallowedCancellation:
+    active: true
+
+style:
+  ForbiddenImport:
+    active: true
+    imports:
+      - value: 'java.io.File'
+        reason: 'Use FsPath. Only core:fs touches files (ADR 0006).'
+      - value: 'java.nio.file.Path'
+        reason: 'Use FsPath. Only core:fs touches files (ADR 0006).'
+      - value: 'java.nio.file.Paths'
+        reason: 'Use FsPath. Only core:fs touches files (ADR 0006).'
+  ForbiddenMethodCall:
+    active: true
+    methods:
+      - value: 'androidx.compose.ui.graphics.Color'
+        reason: 'UI code uses design tokens, never raw colors (design-system §5).'
+      - value: 'java.io.File.createTempFile'
+        reason: 'Use ScratchSpace for seekable scratch writes (architecture §3).'
+      - value: 'kotlin.io.createTempFile'
+        reason: 'Use ScratchSpace for seekable scratch writes (architecture §3).'
+      - value: 'kotlin.io.path.createTempFile'
+        reason: 'Use ScratchSpace for seekable scratch writes (architecture §3).'
+      - value: 'java.nio.file.Files.createTempFile'
+        reason: 'Use ScratchSpace for seekable scratch writes (architecture §3).'
+  MagicNumber:
+    ignorePropertyDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+
+naming:
+  FunctionNaming:
+    ignoreAnnotated: ['Composable']

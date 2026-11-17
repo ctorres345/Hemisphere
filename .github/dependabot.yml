@@ -11,3 +11,20 @@ updates:
         patterns: ["*"]
     commit-message:
       prefix: ci
+
+  - package-ecosystem: gradle
+    directory: /
+    # Until the MVP ships, PRs target mvp (see docs/agents/issue-tracker.md).
+    target-branch: mvp
+    schedule:
+      interval: weekly
+    groups:
+      # Kotlin and the Compose compiler plugin share one version and must move together.
+      kotlin:
+        patterns: ["org.jetbrains.kotlin*"]
+      android-gradle-plugin:
+        patterns: ["com.android.tools.build*", "com.android.application", "com.android.library"]
+      androidx:
+        patterns: ["androidx.*"]
+    commit-message:
+      prefix: build

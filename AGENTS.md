@@ -7,13 +7,18 @@ Kotlin and Jetpack Compose, built for phones and Android gaming handhelds.
 
 ## Build and test
 
-No Android scaffold yet. When it lands, the commands are:
+JDK 17 (Gradle downloads it when missing; `gradle/gradle-daemon-jvm.properties`). Android SDK 36.
 
 - Build: `./gradlew assembleDebug`
-- Test: `./gradlew test`
-- Lint: `./gradlew lint`
+- Everything CI and the review gate run: `./gradlew check` (unit tests, Konsist layer rules,
+  Android Lint with slack/compose-lints, ktlint, detekt with type resolution, the module-graph
+  check, the no-`INTERNET` manifest check and build-logic's own tests)
+- Format: `./gradlew ktlintFormat`
 
-Add the test command to `.nousfx/project.toml` under `[check]` in the same PR as the scaffold.
+The review gate runs `[check]` from `.nousfx/project.toml`. Build conventions live in
+`build-logic/` (convention plugins); the allowed module graph is `ModuleGraphRules.kt` there, and a
+new module is added to it and to `docs/architecture.md` §2 in the same PR. Detekt rules are in
+`config/detekt/`.
 
 ## Where things are
 

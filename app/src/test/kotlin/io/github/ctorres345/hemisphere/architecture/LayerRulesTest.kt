@@ -1,0 +1,68 @@
+package io.github.ctorres345.hemisphere.architecture
+
+import com.lemonappdev.konsist.api.Konsist
+import com.lemonappdev.konsist.api.ext.list.withNameEndingWith
+import com.lemonappdev.konsist.api.verify.assertFalse
+import com.lemonappdev.konsist.api.verify.assertTrue
+import org.junit.Test
+
+/**
+ * The layer rules from docs/code-guidelines.md that Gradle cannot check (ADR 0009). Gradle's
+ * module-graph check covers which module may depend on which; these check the code inside.
+ */
+class LayerRulesTest {
+    private val production = Konsist.scopeFromProduction()
+    private val domain = production.slice { "/core/domain/src/main/" in it.path }
+    private val features = production.slice { "/feature/" in it.path }
+
+    @Test
+    fun `core domain imports nothing from android or Compose`() {
+        domain.files.assertFalse(strict = false) { file ->
+            file.imports.any { it.name.startsWith("android.") || it.name.startsWith("androidx.compose.") }
+        }
+    }
+
+    @Test
+    fun `a use case is a VerbNounUseCase with one public operator invoke and no mutable fields`() {
+        domain.classes().withNameEndingWith("UseCase").assertTrue(strict = false) { useCase ->
+            val publicFunctions = useCase.functions().filter { it.hasPublicOrDefaultModifier }
+            useCaseName.matches(useCase.name) &&
+                publicFunctions.size == 1 &&
+                publicFunctions.single().let { it.name == "invoke" && it.hasOperatorModifier } &&
+                useCase.properties().none { it.isVar }
+        }
+    }
+
+    @Test
+    fun `a ViewModel takes only use cases, SavedStateHandle and assisted values`() {
+        production.classes().withNameEndingWith("ViewModel").assertTrue(strict = false) { viewModel ->
+            viewModel.primaryConstructor?.parameters.orEmpty().all { parameter ->
+                parameter.type.name.endsWith("UseCase") ||
+                    parameter.type.name == "SavedStateHandle" ||
+                    parameter.hasAnnotationWithName("Assisted")
+            }
+        }
+    }
+
+    @Test
+    fun `a ViewModel has no public function but onIntent`() {
+        production.classes().withNameEndingWith("ViewModel").assertTrue(strict = false) { viewModel ->
+            viewModel.functions().filter { it.hasPublicOrDefaultModifier }.all { it.name == "onIntent" }
+        }
+    }
+
+    @Test
+    fun `intent types carry the ViewModel prefix`() {
+        production.classesAndInterfaces().assertFalse(strict = false) { it.name == "Intent" }
+    }
+
+    @Test
+    fun `features never read raw gamepad key codes`() {
+        features.files.assertFalse(strict = false) { it.text.contains("KEYCODE_BUTTON_") }
+    }
+
+    private companion object {
+        /** A verb, at least one noun word, then UseCase: `GetListingUseCase`, `EnqueueCopyUseCase`. */
+        val useCaseName = Regex("""[A-Z][a-z]+(?:[A-Z][a-z0-9]*)+UseCase""")
+    }
+}
