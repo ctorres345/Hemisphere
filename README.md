@@ -20,6 +20,8 @@ Until the MVP ships, work lands on the `mvp` branch. `main` gets the MVP as one 
 
 The design system spec is [`docs/design-system.md`](docs/design-system.md): layouts, input,
 colors, type, spacing and view modes.
+How the app is built is in [`docs/architecture.md`](docs/architecture.md), with the decisions in
+[`docs/adr/`](docs/adr/) and the code rules in [`docs/code-guidelines.md`](docs/code-guidelines.md).
 
 ## Contributing
 
