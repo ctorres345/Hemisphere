@@ -20,7 +20,8 @@ Add the test command to `.nousfx/project.toml` under `[check]` in the same PR as
 - Design system spec: `docs/design-system.md`. It is the visual source for every UI ticket until
   a prototype is approved. Use tokens only: no raw colors, sizes or font values in UI code.
 - Tickets: Jira project `HEM`. Template and labels: `docs/agents/`.
-- Branches: `cesar/<HEM-KEY>` off `main`; screenshots on `cesar/<HEM-KEY>-shots`.
+- Branches: `cesar/<HEM-KEY>` off `main`; screenshots on `cesar/<HEM-KEY>-shots`. Until the MVP
+  ships, ticket PRs target `mvp`, not `main` (see `docs/agents/issue-tracker.md`).
 
 ## Rules
 
