@@ -32,17 +32,17 @@ _Avoid_: drive, disk, storage, mount
 
 **Entry**:
 A file or folder inside a volume.
-_Avoid_: item (outside operations), node, document
+_Avoid_: item (outside jobs), node, document
 
-## Operations
+## Jobs
 
 **Job**:
 One user action on files that runs in the queue, such as copying three files to a folder.
 _Avoid_: task, operation, transfer
 
-**Queue**:
+**Job queue**:
 The ordered list of jobs, with their progress.
-_Avoid_: transfers, background tasks
+_Avoid_: operations queue, transfers, background tasks
 
 **Conflict**:
 A job wants to write an entry whose name already exists at the destination.

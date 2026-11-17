@@ -19,7 +19,7 @@ Add the test command to `.nousfx/project.toml` under `[check]` in the same PR as
 
 - Design system spec: `docs/design-system.md`. It is the visual source for every UI ticket until
   a prototype is approved. Use tokens only: no raw colors, sizes or font values in UI code.
-- Architecture: `docs/architecture.md` (modules, `core:fs`, the operations queue, Trash, state,
+- Architecture: `docs/architecture.md` (modules, `core:fs`, the job queue, Trash, state,
   navigation, persistence, DI). Decisions and their reasons: `docs/adr/`. Domain words:
   `GLOSSARY.md`.
 - Code rules: `docs/code-guidelines.md`. Read it before writing Kotlin.

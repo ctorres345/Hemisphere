@@ -14,5 +14,5 @@ provider type.
 
 - Features cannot use "fast path" tricks such as `File.listFiles()`; any speed-up goes inside a
   provider.
-- Every operation has an `InMemoryProvider` test double, so `core:ops` and ViewModels are tested
+- Every operation has an `InMemoryProvider` test double, so `core:jobs` and ViewModels are tested
   on the JVM.

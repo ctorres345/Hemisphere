@@ -5,7 +5,7 @@ status: proposed
 # Apache Commons Compress for zip, 7z and tar; libarchive for reading RAR; no unRAR
 
 The app is GPL-3.0-or-later, so every library must be GPLv3-compatible. Apache Commons Compress
-(Apache 2.0) creates and extracts zip, 7z and tar (7z uses XZ for Java, public domain).
+(Apache 2.0) creates and extracts zip, 7z and tar (7z uses XZ for Java, 0BSD since 1.10, public domain before).
 libarchive (BSD-2-Clause) reads RAR4 and RAR5 and is used only for RAR extraction, through a
 small JNI wrapper in `core:archive`.
 
@@ -20,6 +20,9 @@ small JNI wrapper in `core:archive`.
 
 ## Consequences
 
-- RAR is extract-only. Creating RAR files is not possible with any free library.
+- RAR is extract-only. libarchive cannot read encrypted RAR archives or every multi-volume set.
+  Those show `FsError.Unsupported` with a clear message, and the release notes list the
+  limits.
+- Creating RAR files is not possible with any free library.
 - libarchive is native code: the scaffold for `core:archive` (after the MVP) builds it with the
   NDK for every ABI we ship, and its version is tracked by Dependabot or a manual check.
