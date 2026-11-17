@@ -143,7 +143,7 @@ class SampleContentTest {
     fun `the marker never shows in the home listing`() =
         runTest(StandardTestDispatcher()) {
             val dispatcher = StandardTestDispatcher(testScheduler)
-            val repo = AppHomeVolumeRepository(home, marker, dispatcher)
+            val repo = AppHomeVolumeRepository(home, marker, dispatcher, seedSamples = true)
             val provider = (repo.providerFor(AppHomeVolume) as FsResult.Ok).value
 
             val names =
@@ -166,7 +166,7 @@ class SampleContentTest {
             home.setWritable(false) // every sample write now fails
             assumeFalse("root ignores the read-only bit", home.canWrite())
             val dispatcher = StandardTestDispatcher(testScheduler)
-            val repo = AppHomeVolumeRepository(home, marker, dispatcher)
+            val repo = AppHomeVolumeRepository(home, marker, dispatcher, seedSamples = true)
             val provider = (repo.providerFor(AppHomeVolume) as FsResult.Ok).value
 
             val results = provider.list(FsPath.root(AppHomeVolume)).toList()
@@ -175,5 +175,18 @@ class SampleContentTest {
             val batch = results.single() as FsResult.Ok
             assertEquals(listOf("Documents"), batch.value.map(Entry::name))
             assertFalse(SampleContent.isDone(marker))
+        }
+
+    @Test
+    fun `without samples a fresh home lists empty and nothing is written`() =
+        runTest(StandardTestDispatcher()) {
+            val dispatcher = StandardTestDispatcher(testScheduler)
+            val repo = AppHomeVolumeRepository(home, marker, dispatcher, seedSamples = false)
+            val provider = (repo.providerFor(AppHomeVolume) as FsResult.Ok).value
+
+            // An empty folder completes without a batch; an error would show up here.
+            assertEquals(emptyList<FsResult<List<Entry>>>(), provider.list(FsPath.root(AppHomeVolume)).toList())
+            assertEquals(emptyList<String>(), homeNames())
+            assertFalse(marker.exists())
         }
 }
