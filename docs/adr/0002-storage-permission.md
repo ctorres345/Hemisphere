@@ -7,8 +7,9 @@ status: accepted
 A file manager must read and write any folder the user picks, quickly and in bulk. On Android 11+
 we request `MANAGE_EXTERNAL_STORAGE` (all-files access). On Android 8 and 9 we request
 `READ_EXTERNAL_STORAGE` and `WRITE_EXTERNAL_STORAGE`; on Android 10 the same plus
-`requestLegacyExternalStorage`. On Android 8 to 10, SD cards and USB OTG drives go through SAF,
-because the legacy permission cannot write removable volumes. On Android 11+, a USB OTG drive
+`requestLegacyExternalStorage`. On Android 8 to 10, SD cards and USB OTG drives are read by path,
+which the legacy permission allows and which is much faster, and written through a SAF
+volume-root grant, because the legacy permission cannot write removable volumes. On Android 11+, a USB OTG drive
 also goes through SAF when the system does not expose it as a readable path.
 The provider for each volume is chosen when it mounts (architecture §3).
 

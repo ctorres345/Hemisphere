@@ -13,6 +13,6 @@ The full in/out list is in `docs/architecture.md` section 1.
 
 ## Consequences
 
-- Tabs are out, but the pane code keeps its location behind one `PaneLocation` type so tabs can
-  be added without changing callers.
+- Tabs are out, but each pane's state is already a list of `TabState` (with one tab in the MVP),
+  so tabs can be added without changing callers.
 - Archives are out, so ADR 0004 is decided now but built after the MVP.

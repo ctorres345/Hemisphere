@@ -12,10 +12,12 @@ anything a linter can check is left to the linter and listed only once here.
 | Rule | From | Checked by |
 | --- | --- | --- |
 | A `feature:*` module never depends on another `feature:*` module. | arch §2 | Gradle module graph (scaffold adds a check task) |
-| `core:fs`, `core:jobs` and `core:data` have no Compose dependency. | arch §2 | Gradle module graph |
-| Outside `core:fs`, no `java.io.File`, `java.nio.file.Path`, path strings or `content://` URIs. Use `FsPath`. The only exception is passing `shareableUri` straight into an `Intent`. | ADR 0006 | Detekt `ForbiddenImport` for the types; review for strings and URIs |
+| `core:domain`, `core:fs`, `core:jobs` and `core:data` have no Compose dependency. | arch §2 | Module-graph check task (scaffold) |
+| Outside `core:fs`, no `java.io.File`, `java.nio.file.Path`, path strings or `content://` URIs. Use `FsPath`. The only exception is passing `ShareUriProvider.shareableUri` straight into an `Intent`. | ADR 0006 | Detekt `ForbiddenImport` for the types; review for strings and URIs |
 | Check `provider.capabilities`, never the provider's type (`is SafProvider`). | arch §3 | Review |
-| Each `core:*` module exposes interfaces; its implementations are `internal`. | arch §9 | Review |
+| A `feature:*` module depends only on `core:domain`, `core:designsystem`, `core:input` and `core:platform`. `core:domain` exposes only `core:model` as `api`. | arch §2 | Module-graph check task (scaffold) |
+| `core:domain` code imports nothing from `android.*` or Compose. | arch §2 | Konsist test |
+| Each data-layer module (`core:fs`, `core:jobs`, `core:data`) exposes interfaces; its implementations are `internal`. | arch §9 | Review |
 
 ## Errors
 
@@ -26,15 +28,29 @@ anything a linter can check is left to the linter and listed only once here.
 | Every `FsError` shown to the user has a message and, where possible, an action (Retry, Grant access). No raw exception text in the UI. | arch §3 | Review |
 | A failed or cancelled copy leaves no file under the final name, and its temp file is deleted. | arch §4 | `core:jobs` tests |
 
-## State and Compose
+## UI layer (strict MVI)
 
 | Rule | From | Checked by |
 | --- | --- | --- |
-| One immutable `UiState` per screen, exposed as `StateFlow`, collected with `collectAsStateWithLifecycle`. | arch §6 | Review |
-| Input reaches a ViewModel through one `onAction(action)` with a sealed action type. | arch §6 | Review |
-| One-off events are state fields the UI clears; no `Channel` or `SharedFlow` for UI events. | arch §6 | Review |
+| Each ViewModel has one immutable `XxxUiState`, one top-level sealed `XxxIntent`, one top-level sealed `XxxResult` and one pure `reduce(state, result)`; sub-parts (`PaneResult`) are nested inside them. | arch §6 | Konsist test, review |
+| Input reaches a ViewModel only through `onIntent(intent)`; a ViewModel has no other public function. | arch §6 | Konsist test |
+| State changes only in `reduce`. It does no I/O, starts no coroutines, calls no use case and reads no clock. | arch §6 | Review, reducer tests |
+| State is a private `MutableStateFlow` whose only write is `update { reduce(it, result) }`, exposed with `asStateFlow()` and collected with `collectAsStateWithLifecycle`. | arch §6 | Review |
+| State that must survive process death is saved through `SavedStateHandle.setSavedStateProvider`, never written by the reducer. Listings and selection are not saved. | arch §6 | Review |
+| Cross-pane state (clipboard, active pane, both panes) lives in one `BrowserUiState`; pane logic is a shared `reducePane`. | arch §6 | Review |
+| One-off events are state fields the UI clears with an intent; no `Channel` or `SharedFlow` for UI events. | arch §6 | Review |
+| Intent types carry the ViewModel prefix (`BrowserIntent`), never a bare `Intent`. | arch §6 | Konsist test |
 | Composables below screen level are stateless: state in, lambdas out. A `Modifier` parameter comes first among optional parameters. | arch §6 | Compose lint rules (slack/compose-lints) |
 | No ViewModel passed into a non-screen composable. | arch §6 | Compose lint rules |
+
+## Domain layer
+
+| Rule | From | Checked by |
+| --- | --- | --- |
+| A ViewModel's constructor takes only use cases, `SavedStateHandle` and `@Assisted` plain values: never a repository, provider, `JobQueue` or DAO. | arch §6 | Konsist test (and the module graph: those types are not on a feature's classpath) |
+| A use case is named `VerbNounUseCase`, has one public `operator fun invoke` and no mutable fields. | arch §6 | Konsist test |
+| A use case returns a result from a `suspend fun` or a `Flow`; no callbacks. | arch §6 | Review |
+| Use cases are main-safe: blocking or heavy work runs on an injected dispatcher. | arch §6 | Review, tests with `StandardTestDispatcher` |
 | Dispatchers are injected (`@IoDispatcher`), never `Dispatchers.IO` in app code. | arch §9 | Detekt `InjectDispatcher` |
 
 ## Design system and input
@@ -46,23 +62,25 @@ anything a linter can check is left to the linter and listed only once here.
 | Every interactive element is reachable with the D-pad in a predictable order, with no focus trap. | design §3 | Instrumented focus tests, manual gamepad pass |
 | Touch targets are at least 48dp in touch mode. | design §7 | Shared components use `minimumInteractiveComponentSize`; accessibility checks in Roborazzi tests |
 | Semantic states (danger, warning, success, selection) carry an icon and a text label, never color alone. | design §5 | Review |
-| Gamepad buttons go through `core:input` actions, never raw `KEYCODE_BUTTON_*` checks in features. | design §3 | Detekt `ForbiddenImport` / review |
+| Gamepad buttons go through `core:input` actions, never raw `KEYCODE_BUTTON_*` checks in features. | design §3 | Konsist test for `KEYCODE_BUTTON_` references in `feature:*`, review |
 | Long file names are cut in the middle with the shared text component. | design §6 | Review |
 
 ## Jobs and Trash
 
 | Rule | From | Checked by |
 | --- | --- | --- |
-| Copy, move and delete always go through `JobQueue`, never a direct provider call from a ViewModel. | arch §4 | Review |
-| Delete on a volume with the `trash` capability goes to Trash; permanent delete only from the Trash screen or on volumes without the capability, with the `danger` dialog. | arch §5 | `core:jobs` tests |
+| Copy, move and delete always go through a use case that enqueues a job on `JobQueue`, never a direct provider call. | arch §4 | Review, Konsist test |
+| Delete on a volume with Trash goes to Trash; permanent delete only from the Trash screen or on volumes without Trash, with the `danger` dialog. | arch §5 | `core:jobs` tests |
 | A move inside one volume uses `move` when the provider has the `move` capability; copy plus delete only otherwise. | arch §4 | `core:jobs` tests |
+| A job stores its roots and a path cursor, never one row per file up front; records and the cursor are written in one transaction. | arch §4 | `core:jobs` tests, review |
+| Each trashed entry goes in its own `files/<id>/` folder with its own name; the info file is written before the move. | arch §5 | `core:jobs` tests |
 
 ## Persistence
 
 | Rule | From | Checked by |
 | --- | --- | --- |
 | Every Room schema change ships a migration and a migration test. No destructive fallback. | arch §8 | Room schema export in CI, tests |
-| Features read settings and saved data only through `core:data` repositories, never DataStore keys or DAOs. | arch §8 | Review |
+| Features read settings and saved data only through use cases; only the data layer (`core:data`, `core:jobs`) touches DataStore keys or DAOs. | arch §8 | Module-graph check task (scaffold), review |
 
 ## Privacy and dependencies
 
@@ -84,6 +102,9 @@ anything a linter can check is left to the linter and listed only once here.
 
 | Rule | From | Checked by |
 | --- | --- | --- |
-| `core:fs`, `core:jobs` and every ViewModel have JVM tests using `InMemoryProvider` and `runTest`. | arch §10 | `./gradlew test` in CI |
+| Every reducer has plain JUnit tests; every use case and ViewModel has JVM tests with fakes (`InMemoryProvider`, fake `JobQueue`, fake repositories) and `runTest`. No mocking library for our own types. | arch §10 | `./gradlew test` in CI |
+| `core:fs` and `core:jobs` have JVM tests using `InMemoryProvider` and `runTest`. Fakes live in `core:testing`, used only from test source sets. | arch §10 | `./gradlew test` in CI |
+| Equality, selection, conflict checks and database lookups use `EntryKey`, never the path's string form. | arch §3 | Review, `core:model` tests |
 | Each shared component has a Roborazzi test in light, dark and AMOLED; phone and handheld; touch and gamepad. | design §11 | Roborazzi in CI |
 | A bug fix starts with a failing test that shows the bug. | arch §10 | Review |
+| A 10,000-entry folder shows its first rows in under 300 ms on a low-end handheld. | arch §3 | Macrobenchmark before each release |
