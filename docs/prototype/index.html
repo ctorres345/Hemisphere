@@ -1,0 +1,866 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hemisphere prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap">
+<!--
+  HEM-3 throwaway prototype. Source of values: docs/design-system.md sections 5 to 7.
+  Layout: a control bar on top, the device in the middle, the spec notes beside it.
+  One unit here is one dp. Accent colors are provisional placeholders (final hex: HEM-6).
+-->
+<style>
+/* ---------- Page chrome (not part of the app design) ---------- */
+:root {
+  --pg-bg: #EEEFF1; --pg-panel: #FFFFFF; --pg-line: #DADBDF; --pg-fg: #16171A; --pg-fg2: #5E6168;
+  --pg-sel: #16171A; --pg-onsel: #FFFFFF; --pg-bezel: #1B1C1F; --pg-focus: #2F5BD3;
+  --pg-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --pg-bg: #0C0D0F; --pg-panel: #16171A; --pg-line: #2A2C30; --pg-fg: #E9E9EB; --pg-fg2: #A3A5AA;
+  --pg-sel: #E9E9EB; --pg-onsel: #111214; --pg-bezel: #2A2B2F; --pg-focus: #8AA8F8; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --pg-bg: #0C0D0F; --pg-panel: #16171A; --pg-line: #2A2C30; --pg-fg: #E9E9EB; --pg-fg2: #A3A5AA;
+  --pg-sel: #E9E9EB; --pg-onsel: #111214; --pg-bezel: #2A2B2F; --pg-focus: #8AA8F8; color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--pg-bg); color: var(--pg-fg); font: 14px/1.45 var(--pg-font); }
+button { font: inherit; color: inherit; }
+.ctl { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: flex-end;
+  padding-block: 16px 14px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--pg-panel); border-bottom: 1px solid var(--pg-line); }
+.ctl h1 { font-size: 16px; font-weight: 500; margin: 0 8px 0 0; align-self: center; flex-basis: 100%; }
+.ctl h1 small { color: var(--pg-fg2); font-weight: 400; font-size: 13px; margin-inline-start: 8px; }
+.grp { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.grp > span { font-size: 11px; color: var(--pg-fg2); letter-spacing: .02em; }
+.seg { display: flex; flex-wrap: wrap; border: 1px solid var(--pg-line); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: transparent; padding: 6px 10px; cursor: pointer; font-size: 13px; border-inline-end: 1px solid var(--pg-line); }
+.seg button:last-child { border-inline-end: 0; }
+.seg button[aria-pressed="true"] { background: var(--pg-sel); color: var(--pg-onsel); }
+.seg button:focus-visible, .pg-link:focus-visible { outline: 2px solid var(--pg-focus); outline-offset: -2px; }
+.wrap { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; justify-content: center;
+  padding-block: 24px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.stage { flex: 1 1 520px; min-width: 0; display: flex; justify-content: center; }
+.holder { position: relative; }
+.notes { flex: 0 1 340px; min-width: 0; background: var(--pg-panel); border: 1px solid var(--pg-line); border-radius: 12px; padding: 16px; font-size: 13px; }
+.notes h2 { font-size: 15px; font-weight: 500; margin: 0 0 4px; }
+.notes h3 { font-size: 13px; font-weight: 500; margin: 16px 0 6px; color: var(--pg-fg2); }
+.notes p { margin: 0 0 8px; }
+.notes ul { margin: 0; padding-inline-start: 18px; }
+.notes li { margin-bottom: 4px; }
+.notes code, .keys kbd { font: 12px ui-monospace, "JetBrains Mono", Menlo, monospace; }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; }
+.keys kbd { border: 1px solid var(--pg-line); border-radius: 4px; padding: 0 5px; white-space: nowrap; justify-self: start; }
+.pad-status { color: var(--pg-fg2); font-size: 12px; margin-top: 8px; }
+
+/* ---------- App tokens: docs/design-system.md section 5 ---------- */
+.dev {
+  --canvas: #F7F7F8; --raised: #FFFFFF; --overlay: #FFFFFF; --bd: #E3E4E7; --bd-strong: #8A8C91;
+  --t1: #16171A; --t2: #5E6168; --t3: #6E7075; --scrim: rgba(22,23,26,.32);
+  --danger: #B3261E; --warning: #8A5300; --success: #2E7D4F;
+  --ft-folder: #5B6B8C; --ft-image: #2F7D6B; --ft-video: #8A4FA0; --ft-audio: #A0522D; --ft-archive: #8C6A1F;
+  --ft-apk: #4F7F2F; --ft-rom: #B03A5B; --ft-doc: #3D6FA3; --ft-code: #5A5F6B; --ft-other: #6E7075;
+  /* provisional accent (blue); JS swaps these per picked accent */
+  --a-fill: #2F5BD3; --a-on: #FFFFFF; --a-text: #2F5BD3; --a-focus: #2F5BD3;
+  --a-tint: color-mix(in srgb, var(--a-fill) 12%, var(--raised));
+  /* type: section 6 */
+  --f-title: 500 20px/28px var(--app-font); --f-heading: 500 16px/22px var(--app-font); --f-body: 400 14px/20px var(--app-font);
+  --f-meta: 400 12px/16px var(--app-font); --f-caption: 400 11px/14px var(--app-font); --app-font: "Inter", Roboto, system-ui, sans-serif;
+  /* space and shape: section 7 */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --r-chip: 4px; --r-row: 8px; --r-sheet: 12px;
+  --row-h: 48px; --icon: 32px;
+}
+.dev[data-t="dark"] {
+  --canvas: #111214; --raised: #18191C; --overlay: #202226; --bd: #26282C; --bd-strong: #6C6E73;
+  --t1: #E9E9EB; --t2: #A3A5AA; --t3: #898B90; --scrim: rgba(0,0,0,.56);
+  --danger: #F2827A; --warning: #E5A440; --success: #6CC18F;
+  --ft-folder: #8D9CC0; --ft-image: #6BBFA9; --ft-video: #C08AD6; --ft-audio: #E0956A; --ft-archive: #D4B060;
+  --ft-apk: #93C46E; --ft-rom: #E58AA5; --ft-doc: #85AEDB; --ft-code: #A3A8B3; --ft-other: #898B90;
+  --a-tint: color-mix(in srgb, var(--a-fill) 18%, var(--raised));
+}
+.dev[data-t="amoled"] {
+  --canvas: #000000; --raised: #0B0B0C; --overlay: #141416; --bd: #1E1F22; --bd-strong: #626469;
+  --t1: #E9E9EB; --t2: #A3A5AA; --t3: #7E8085; --scrim: rgba(0,0,0,.7);
+  --danger: #F2827A; --warning: #E5A440; --success: #6CC18F;
+  --ft-folder: #8D9CC0; --ft-image: #6BBFA9; --ft-video: #C08AD6; --ft-audio: #E0956A; --ft-archive: #D4B060;
+  --ft-apk: #93C46E; --ft-rom: #E58AA5; --ft-doc: #85AEDB; --ft-code: #A3A8B3; --ft-other: #898B90;
+  --a-tint: color-mix(in srgb, var(--a-fill) 20%, var(--raised));
+}
+.dev[data-in="pad"] { --row-h: 40px; --icon: 24px; }
+
+/* ---------- Device frame ---------- */
+.dev { position: absolute; top: 0; left: 0; transform-origin: 0 0;
+  background: var(--canvas); color: var(--t1); font: var(--f-body); overflow: hidden;
+  display: flex; flex-direction: column; box-shadow: 0 0 0 10px var(--pg-bezel); border-radius: 26px; user-select: none; -webkit-user-select: none; }
+.dev[data-d="phone"] { width: 412px; height: 915px; }
+.dev[data-d="handheld"] { width: 960px; height: 540px; border-radius: 16px; }
+.dev svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.dev svg .fill { fill: currentColor; stroke: none; }
+.dev[dir="rtl"] .flip { transform: scaleX(-1); }
+/* Filenames, sizes and other user or English text are bidi-isolated, so they read correctly in an RTL layout */
+.dev .meta, .dev .ttl, .dev .crumb, .dev .tx, .dev .chip, .dev .sub, .dev .l2, .dev .job b { unicode-bidi: plaintext; }
+.sbar { height: 24px; flex: none; display: flex; align-items: center; justify-content: space-between; padding-inline: var(--s4); font: var(--f-meta); color: var(--t2); font-variant-numeric: tabular-nums; }
+.dev[data-d="phone"] .sbar { height: 32px; padding-inline: var(--s5); }
+.navbar { height: 20px; flex: none; display: flex; align-items: center; justify-content: center; }
+.navbar i { width: 108px; height: 4px; border-radius: 2px; background: var(--t2); opacity: .6; }
+
+/* ---------- Shared pieces ---------- */
+.ib { width: 48px; height: 48px; border: 0; background: transparent; color: var(--t2); display: grid; place-items: center; border-radius: var(--r-row); cursor: pointer; flex: none; position: relative; }
+.dev[data-in="pad"] .ib { width: 40px; height: 40px; }
+.ib:active, .row:active, .btn:active, .chip:active, .rail-i:active, .set-row:active, .menu-i:active, .crumb:active { background: color-mix(in srgb, var(--t1) 10%, transparent); }
+.appbar { height: 56px; flex: none; display: flex; align-items: center; gap: var(--s1); padding-inline: var(--s1); }
+.appbar .ttl { font: var(--f-title); flex: 1; min-width: 0; padding-inline: var(--s1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dev[data-in="pad"] .appbar { height: 48px; }
+.crumbs { display: flex; align-items: center; gap: 2px; overflow-x: auto; scrollbar-width: none; padding-inline: var(--s3); height: 36px; flex: none; }
+.crumbs::-webkit-scrollbar { display: none; }
+.crumb { border: 0; background: transparent; color: var(--t2); font: var(--f-meta); padding: 6px var(--s2); border-radius: var(--r-chip); white-space: nowrap; cursor: pointer; }
+.crumb[aria-current="page"] { color: var(--t1); font-weight: 500; }
+.crumbs .sep { color: var(--t3); font: var(--f-meta); }
+.list { flex: 1; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; padding-block-end: var(--s2); position: relative; }
+.row { display: flex; align-items: center; gap: var(--s3); height: var(--row-h); padding-inline: var(--s4) var(--s3); cursor: pointer; position: relative; border-radius: var(--r-row); margin-inline: var(--s1); }
+.row + .row::before { content: ""; position: absolute; inset-block-start: 0; inset-inline: calc(var(--s4) + var(--icon) + var(--s3)) var(--s3); border-top: 1px solid var(--bd); }
+.row[aria-selected="true"] { background: var(--a-tint); }
+.list.selecting .row + .row::before { inset-inline-start: calc(var(--s4) + 22px + var(--icon) + 2 * var(--s3)); }
+.ico { width: var(--icon); height: var(--icon); border-radius: var(--r-chip); display: grid; place-items: center; flex: none; background: color-mix(in srgb, var(--c) 14%, transparent); color: var(--c); }
+.dev[data-in="pad"] .ico svg { width: 18px; height: 18px; }
+.ico svg { width: 20px; height: 20px; }
+.nm { flex: 1; min-width: 0; display: flex; white-space: nowrap; font: var(--f-body); color: var(--t1); }
+.nm .a { overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; min-width: 1ch; }
+.nm .b { flex: none; }
+.meta { font: var(--f-meta); color: var(--t2); font-variant-numeric: tabular-nums; white-space: nowrap; flex: none; text-align: end; }
+.chk { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--bd-strong); display: grid; place-items: center; flex: none; }
+.chk svg { width: 14px; height: 14px; stroke-width: 3; opacity: 0; }
+.row[aria-selected="true"] .chk { background: var(--a-fill); border-color: var(--a-fill); color: var(--a-on); }
+.row[aria-selected="true"] .chk svg { opacity: 1; }
+.empty { display: grid; place-items: center; text-align: center; gap: var(--s2); padding: var(--s6) var(--s5); color: var(--t2); }
+.empty b { font: var(--f-heading); color: var(--t1); }
+.btn { height: 40px; border-radius: var(--r-row); border: 1px solid var(--bd-strong); background: transparent; color: var(--t1); font: var(--f-body); font-weight: 500; padding-inline: var(--s4); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); white-space: nowrap; }
+.btn.primary { background: var(--a-fill); border-color: var(--a-fill); color: var(--a-on); }
+.btn.text { border-color: transparent; color: var(--a-text); padding-inline: var(--s3); }
+.btn svg { width: 18px; height: 18px; }
+.chip { height: 32px; border-radius: var(--r-chip); border: 1px solid var(--bd); background: transparent; color: var(--t2); font: var(--f-meta); padding-inline: var(--s3); display: inline-flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; flex: none; font-variant-numeric: tabular-nums; }
+.chip svg { width: 16px; height: 16px; }
+.chip[aria-selected="true"] { background: var(--a-tint); border-color: transparent; color: var(--t1); font-weight: 500; }
+.qchip { border-color: transparent; background: var(--a-tint); color: var(--t1); }
+.qchip .bar { width: 36px; height: 4px; border-radius: 2px; background: var(--bd); overflow: hidden; }
+.qchip .bar i { display: block; height: 100%; background: var(--a-fill); }
+
+/* gamepad focus ring: section 3, always visible in gamepad mode */
+.dev[data-in="pad"] .gf { outline: 2px solid var(--a-focus); outline-offset: -2px; border-radius: var(--r-row); }
+.dev[data-in="pad"] .row.gf { background: color-mix(in srgb, var(--a-focus) 8%, transparent); }
+.dev[data-in="pad"] .row.gf[aria-selected="true"] { background: var(--a-tint); }
+.dev[data-in="pad"] .sw.gf { outline-offset: 2px; border-radius: 50%; }
+/* filled or selected controls: ring sits outside with a gap, so focus never blends with the fill or the selected state */
+.dev[data-in="pad"] .btn.gf, .dev[data-in="pad"] .chip.gf, .dev[data-in="pad"] .fab.gf { outline-offset: 2px; }
+.dev[data-in="pad"] .fab.gf { border-radius: var(--r-sheet); }
+
+/* ---------- Single ---------- */
+.single { flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; }
+.fab { position: absolute; inset-inline-end: var(--s4); inset-block-end: var(--s4); width: 56px; height: 56px; border-radius: var(--r-sheet); background: var(--a-fill); color: var(--a-on); border: 0; display: grid; place-items: center; cursor: pointer; }
+.selhead { background: var(--a-tint); }
+.selhead .ttl { font: var(--f-heading); }
+.actbar { flex: none; display: flex; justify-content: space-around; border-top: 1px solid var(--bd); background: var(--raised); padding-block: var(--s1); }
+.act { border: 0; background: transparent; color: var(--t1); display: flex; flex-direction: column; align-items: center; gap: 2px; font: var(--f-caption); padding: 6px var(--s2); min-width: 64px; min-height: 48px; border-radius: var(--r-row); cursor: pointer; }
+.act.danger { color: var(--danger); }
+.tray { flex: none; display: flex; align-items: center; gap: var(--s2); margin: 0 var(--s2) var(--s2); padding-inline: var(--s3) var(--s1); min-height: 56px; background: var(--overlay); border: 1px solid var(--bd); border-radius: var(--r-sheet); }
+.tray .tx { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.tray .tx b { font: var(--f-body); font-weight: 500; }
+.tray .tx span { font: var(--f-meta); color: var(--t2); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tray > svg { color: var(--t2); }
+
+/* ---------- Dual ---------- */
+.topbar { height: 44px; flex: none; display: flex; align-items: center; gap: var(--s2); padding-inline: var(--s3) var(--s1); border-bottom: 1px solid var(--bd); }
+.topbar .ttl { font: var(--f-heading); flex: 1; }
+.dual { flex: 1; display: flex; min-height: 0; }
+.rail { width: 56px; flex: none; display: flex; flex-direction: column; align-items: center; gap: var(--s1); padding-block: var(--s2); border-inline-end: 1px solid var(--bd); }
+.rail .grow { flex: 1; }
+.rail-i { width: 48px; height: 48px; border: 0; border-radius: var(--r-row); background: transparent; color: var(--t2); display: grid; place-items: center; cursor: pointer; }
+.rail-i[aria-current="true"] { background: var(--a-tint); color: var(--t1); }
+.pane { flex: 1; min-width: 0; display: flex; flex-direction: column; position: relative; }
+.pane + .pane { border-inline-start: 1px solid var(--bd); }
+.phead { flex: none; position: relative; padding-block-start: 3px; }
+.pane.active .phead::before { content: ""; position: absolute; inset-inline: 0; inset-block-start: 0; height: 3px; background: var(--a-fill); }
+.dev[data-in="touch"] .tabs { height: 48px; }
+.dev[data-in="touch"] .crumbs { height: 48px; }
+.tabs { display: flex; gap: var(--s1); align-items: center; padding: var(--s1) var(--s2) 0; overflow-x: auto; scrollbar-width: none; height: 40px; }
+.tabs .chip { height: 30px; }
+.pane:not(.active) .nm, .pane:not(.active) .crumb[aria-current="page"], .pane:not(.active) .chip[aria-selected="true"] { color: var(--t2); }
+.pane:not(.active) .chip:not([aria-selected="true"]) { color: var(--t3); }
+.pane:not(.active) .chip[aria-selected="true"] { background: transparent; border-color: var(--bd); font-weight: 400; }
+.pane:not(.active) .meta, .pane:not(.active) .crumb { color: var(--t3); }
+.psel { display: flex; align-items: center; gap: var(--s1); height: 40px; padding-inline: var(--s1) var(--s2); background: var(--a-tint); }
+.psel .ttl { font: var(--f-body); font-weight: 500; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.psel .btn { height: 32px; padding-inline: var(--s2); font: var(--f-meta); font-weight: 500; border-color: transparent; }
+.psel .btn.danger { color: var(--danger); }
+
+/* ---------- Gamepad hint footer ---------- */
+.keypair { display: inline-flex; gap: inherit; }
+.hints { position: relative; z-index: 7; flex: none; height: 32px; display: flex; align-items: center; gap: var(--s4); padding-inline: var(--s4); border-top: 1px solid var(--bd); background: var(--raised); font: var(--f-meta); color: var(--t2); white-space: nowrap; overflow: hidden; }
+.dev[data-d="phone"] .hints { gap: var(--s3); padding-inline: var(--s3); }
+.hint { display: inline-flex; align-items: center; gap: 5px; }
+.gl { min-width: 18px; height: 18px; border-radius: 9px; border: 1.5px solid var(--t2); color: var(--t1); display: inline-grid; place-items: center; font: 500 10px/1 var(--app-font); padding-inline: 3px; }
+.gl.sq { border-radius: var(--r-chip); }
+.hints .end { margin-inline-start: auto; }
+
+/* ---------- Overlays ---------- */
+.scrim { position: absolute; inset: 0; background: var(--scrim); z-index: 5; }
+.sheet { position: absolute; inset-inline: 0; inset-block-end: 0; z-index: 6; background: var(--overlay); border-radius: var(--r-sheet) var(--r-sheet) 0 0; padding: var(--s2) var(--s4) var(--s4); display: flex; flex-direction: column; gap: var(--s3); max-height: 85%; overflow-y: auto; }
+.dev[data-d="phone"][data-in="pad"] .sheet { padding-block-end: calc(var(--s4) + 52px); }
+.dev[data-d="handheld"] .sheet { inset-inline: 0; margin-inline: auto; inset-block: 50% auto; transform: translateY(-50%); width: 520px; border-radius: var(--r-sheet); padding-block-start: var(--s4); }
+.grab { width: 32px; height: 4px; border-radius: 2px; background: var(--bd-strong); align-self: center; }
+.dev[data-d="handheld"] .grab { display: none; }
+.sheet h3 { font: var(--f-title); margin: 0; }
+.sheet .sub { font: var(--f-meta); color: var(--t2); margin: 0; }
+.cmp { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); }
+.cmp > div { border: 1px solid var(--bd); border-radius: var(--r-row); padding: var(--s3); display: flex; flex-direction: column; gap: 2px; background: var(--raised); }
+.cmp .k { font: var(--f-caption); color: var(--t2); }
+.cmp .v { font: var(--f-body); font-variant-numeric: tabular-nums; }
+.cmp .tag { font: var(--f-caption); color: var(--t1); display: inline-flex; align-items: center; gap: 4px; }
+.cmp .tag svg { width: 14px; height: 14px; }
+.ckrow { display: flex; align-items: center; gap: var(--s3); min-height: 48px; border-radius: var(--r-row); padding-inline: var(--s1); cursor: pointer; }
+.box { width: 20px; height: 20px; border-radius: var(--r-chip); border: 2px solid var(--bd-strong); display: grid; place-items: center; flex: none; }
+.box svg { width: 14px; height: 14px; stroke-width: 3; opacity: 0; }
+.ckrow[aria-checked="true"] .box { background: var(--a-fill); border-color: var(--a-fill); color: var(--a-on); }
+.ckrow[aria-checked="true"] .box svg { opacity: 1; }
+.btns { display: flex; gap: var(--s2); justify-content: flex-end; flex-wrap: wrap; }
+.job { display: flex; flex-direction: column; gap: 6px; padding-block: var(--s2); border-top: 1px solid var(--bd); }
+.job:first-of-type { border-top: 0; }
+.job .l1 { display: flex; align-items: center; gap: var(--s2); }
+.job .l1 b { font: var(--f-body); font-weight: 500; flex: 1; min-width: 0; }
+.job .l2 { font: var(--f-meta); color: var(--t2); font-variant-numeric: tabular-nums; }
+.prog { height: 6px; border-radius: 3px; background: var(--bd); overflow: hidden; }
+.prog i { display: block; height: 100%; background: var(--a-fill); transition: width .4s linear; }
+.state-ok { color: var(--success); display: inline-flex; gap: 4px; align-items: center; font: var(--f-meta); }
+.state-ok svg { width: 16px; height: 16px; }
+.qlabel { font: var(--f-caption); color: var(--t2); letter-spacing: .03em; margin-block-start: var(--s2); }
+.menu { position: absolute; z-index: 6; background: var(--overlay); border: 1px solid var(--bd); border-radius: var(--r-sheet); padding: var(--s1); min-width: 220px; display: flex; flex-direction: column; }
+.menu-i { display: flex; align-items: center; gap: var(--s3); height: 44px; border: 0; background: transparent; color: var(--t1); font: var(--f-body); padding-inline: var(--s3); border-radius: var(--r-row); cursor: pointer; text-align: start; }
+.menu-i svg { color: var(--t2); width: 20px; height: 20px; }
+.menu-i.danger, .menu-i.danger svg { color: var(--danger); }
+.dev[data-in="pad"] .menu-i { height: 40px; }
+.dev[data-in="touch"] .menu-i { height: 48px; }
+/* Touch: small chips, breadcrumbs and selection-bar buttons keep their look but get a 48dp hit area. */
+.dev[data-in="touch"] :is(.chip, .crumb, .btn) { position: relative; }
+.dev[data-in="touch"] :is(.chip, .crumb, .btn)::after { content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, 48px); height: 48px; transform: translate(-50%, -50%); }
+.drawer { position: absolute; z-index: 6; inset-block: 0; inset-inline-start: 0; width: 300px; background: var(--overlay); padding: var(--s4) var(--s2); display: flex; flex-direction: column; gap: 2px; }
+.drawer h4 { font: var(--f-caption); color: var(--t2); margin: var(--s3) var(--s3) var(--s1); letter-spacing: .03em; }
+.drawer .menu-i { height: 48px; }
+.drawer .menu-i[aria-current="true"] { background: var(--a-tint); }
+.drawer .menu-i .meta { margin-inline-start: auto; }
+.dev[data-d="phone"] { --lift-nav: 20px; }
+.dev[data-in="pad"] { --lift-hints: 32px; }
+.dev[data-tray="1"] { --lift-tray: 64px; }
+.dev[data-in="pad"] .snack { z-index: 8; }
+.dev[data-snack="1"] .fab { inset-block-end: calc(var(--s4) + 56px); }
+.snack { position: absolute; z-index: 4; inset-inline: var(--s2); inset-block-end: calc(var(--lift-nav, 0px) + var(--lift-hints, 0px) + var(--lift-tray, 0px) + var(--s2)); background: var(--t1); color: var(--canvas); border-radius: var(--r-row); display: flex; align-items: center; gap: var(--s2); padding-inline: var(--s4) var(--s1); min-height: 48px; font: var(--f-body); }
+.snack span { flex: 1; }
+.snack .btn.text { color: var(--canvas); text-decoration: underline; }
+
+/* ---------- Settings ---------- */
+.settings { flex: 1; overflow-y: auto; padding-block-end: var(--s4); }
+.dev[data-d="handheld"] .settings { padding-inline: var(--s5); }
+.sec { font: var(--f-caption); color: var(--a-text); letter-spacing: .03em; margin: var(--s4) var(--s4) var(--s1); font-weight: 500; }
+.set-row { display: flex; align-items: center; gap: var(--s3); min-height: 56px; padding: var(--s2) var(--s4); border-radius: var(--r-row); margin-inline: var(--s1); cursor: pointer; }
+.dev[data-in="pad"] .set-row { min-height: 48px; }
+.set-row .tx { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.set-row .tx span { font: var(--f-meta); color: var(--t2); }
+.set-row .val { font: var(--f-meta); color: var(--t2); }
+.segs { display: flex; gap: var(--s1); padding: 0 var(--s4) var(--s2); flex-wrap: wrap; }
+.segs .chip { height: 36px; }
+.swatches { display: flex; flex-wrap: wrap; gap: 0; padding: var(--s1) var(--s3) var(--s3); }
+.sw { width: 48px; height: 48px; border-radius: 50%; border: 0; background: transparent; color: var(--on); display: grid; place-items: center; cursor: pointer; position: relative; }
+.sw::before { content: ""; position: absolute; inset: 6px; border-radius: 50%; background: var(--c); }
+.sw svg { width: 18px; height: 18px; stroke-width: 2.5; opacity: 0; position: relative; }
+.sw[aria-checked="true"] svg { opacity: 1; }
+.sw[aria-checked="true"]::after { content: ""; position: absolute; inset: 2px; border-radius: 50%; border: 2px solid var(--c); }
+.tog { width: 44px; height: 24px; border-radius: 12px; border: 2px solid var(--bd-strong); position: relative; flex: none; }
+.tog::after { content: ""; position: absolute; width: 14px; height: 14px; border-radius: 50%; background: var(--bd-strong); inset-block-start: 3px; inset-inline-start: 3px; }
+.set-row[aria-checked="true"] .tog { background: var(--a-fill); border-color: var(--a-fill); }
+.set-row[aria-checked="true"] .tog::after { background: var(--a-on); inset-inline-start: 23px; width: 14px; }
+@media (prefers-reduced-motion: reduce) { .prog i { transition: none; } }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+</head>
+<body>
+<header class="ctl" aria-label="Prototype controls">
+  <h1>Hemisphere <small>HEM-3 prototype · provisional accent colors</small></h1>
+  <div class="grp"><span id="g-screen">Screen</span><div class="seg" role="group" aria-labelledby="g-screen" data-k="screen">
+    <button data-v="single">Phone · Single</button><button data-v="dual">Handheld · Dual</button><button data-v="select">Selection + clipboard</button><button data-v="conflict">Conflict sheet</button><button data-v="queue">Queue sheet</button><button data-v="settings">Settings</button></div></div>
+  <div class="grp"><span id="g-dev">Device</span><div class="seg" role="group" aria-labelledby="g-dev" data-k="device"><button data-v="phone">Phone</button><button data-v="handheld">Handheld</button></div></div>
+  <div class="grp"><span id="g-theme">Theme</span><div class="seg" role="group" aria-labelledby="g-theme" data-k="theme"><button data-v="light">Light</button><button data-v="dark">Dark</button><button data-v="amoled">AMOLED</button></div></div>
+  <div class="grp"><span id="g-in">Input</span><div class="seg" role="group" aria-labelledby="g-in" data-k="input"><button data-v="touch">Touch</button><button data-v="pad">Gamepad</button></div></div>
+  <div class="grp"><span id="g-dir">Direction</span><div class="seg" role="group" aria-labelledby="g-dir" data-k="dir"><button data-v="ltr">LTR</button><button data-v="rtl">RTL</button></div></div>
+</header>
+<div class="wrap">
+  <div class="stage" id="stage"><div class="holder" id="holder"><div class="dev" id="dev" role="application" aria-label="Hemisphere app mockup"></div></div></div>
+  <aside class="notes" id="notes"></aside>
+</div>
+<div class="sr" id="announce" aria-live="polite"></div>
+<script>
+"use strict";
+/* ---------------- Icons ---------------- */
+const P = {
+  menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  search: '<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>',
+  more: '<circle class="fill" cx="12" cy="5.5" r="1.6"/><circle class="fill" cx="12" cy="12" r="1.6"/><circle class="fill" cx="12" cy="18.5" r="1.6"/>',
+  single: '<rect x="4" y="5" width="16" height="14" rx="2"/>',
+  dual: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/>',
+  folder: '<path d="M3 7.5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  file: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/>',
+  close: '<path d="M6 6l12 12M18 6L6 18"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
+  copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
+  cut: '<circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M7.8 16.2L18 4M16.2 16.2L6 4"/>',
+  paste: '<rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3h6v2"/>',
+  trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+  rename: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
+  arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  back: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  phone: '<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/>',
+  sd: '<path d="M8 3h9a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7z"/><path d="M10 6v3M13 6v3M16 6v3"/>',
+  star: '<path d="M12 4l2.5 5.2 5.5.6-4 3.8 1 5.4-5-2.7-5 2.7 1-5.4-4-3.8 5.5-.6z"/>',
+  history: '<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4 4v4h4M12 8v4l3 2"/>',
+  settings: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
+  pause: '<path d="M9 6v12M15 6v12"/>',
+  play: '<path d="M8 5l11 7-11 7z"/>',
+  ok: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+  queue: '<path d="M8 20V4M4 8l4-4 4 4M16 4v16M12 16l4 4 4-4"/>',
+  share: '<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/>',
+  newfolder: '<path d="M3 7.5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 11v5M9.5 13.5h5"/>',
+  sort: '<path d="M4 7h16M7 12h10M10 17h4"/>',
+  selall: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l3 3 5-6"/>',
+  image: '<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 16l5-5 4 4 3-3 4 4"/><circle cx="15" cy="9" r="1.4"/>',
+  video: '<rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/>',
+  audio: '<path d="M9 18V6l10-2v12"/><circle cx="7" cy="18" r="2.2"/><circle cx="17" cy="16" r="2.2"/>',
+  archive: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M12 3v2M12 7v2M12 11v2"/><rect x="10.5" y="14" width="3" height="4" rx=".5"/>',
+  apk: '<path d="M6 10h12v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2z"/><path d="M8 10a4 4 0 0 1 8 0M8.5 5l1.3 2M15.5 5l-1.3 2"/>',
+  rom: '<path d="M6 3h12v12l-2 2v4H8v-4l-2-2z"/><path d="M9 7h6M9 10h6"/>',
+  doc: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',
+  code: '<path d="M9 8l-4 4 4 4M15 8l4 4-4 4"/>'
+};
+P.props = P.info;
+const FLIP = new Set(['arrow', 'back']);
+const ic = n => `<svg viewBox="0 0 24 24" ${FLIP.has(n) ? 'class="flip"' : ''} aria-hidden="true">${P[n]}</svg>`;
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/* ---------------- Sample file system (made-up names) ---------------- */
+const D = (n, count, date) => ({ n, t: 'folder', count, date });
+const F = (n, t, mb, date) => ({ n, t, mb, date });
+const FS = {
+  '/int': [D('Android', 4, '2 Sep 2026'), D('DCIM', 3, '16 Nov 2026'), D('Download', 7, '17 Nov 2026'), D('Music', 38, '30 Oct 2026'), D('Pictures', 112, '15 Nov 2026'), D('Documents', 9, '1 Nov 2026')],
+  '/int/Download': [D('ROMs', 7, '17 Nov 2026'), D('Firmware', 2, '3 Oct 2026'), F('Hemisphere-0.2.0-debug.apk', 'apk', 18.4, '17 Nov 2026'), F('controller-layouts.pdf', 'doc', 2.1, '12 Nov 2026'), F('Screenshot_20261116_2214.png', 'image', 1.6, '16 Nov 2026'), F('ost-sampler.flac', 'audio', 41.2, '9 Nov 2026'), F('saves-backup-2026-11.7z', 'archive', 96.8, '14 Nov 2026')],
+  '/int/Download/ROMs': [D('GBA', 24, '10 Nov 2026'), D('SNES', 41, '10 Nov 2026'), D('PS1', 7, '2 Nov 2026'),
+    F("Legend of the Twin Hemispheres - Director's Cut (USA, Europe) (Rev 2).zip", 'archive', 612, '16 Nov 2026'),
+    F('Pocket Racer Turbo (USA).gba', 'rom', 8.4, '2 Nov 2026'), F('Moonlit Harbor (Japan) (En).iso', 'rom', 582, '28 Oct 2026'),
+    F('Comet Courier (Europe).sfc', 'rom', 4, '19 Oct 2026'), F('cheats.txt', 'doc', 0.01, '19 Oct 2026')],
+  '/int/Download/ROMs/GBA': [F('Pocket Racer Turbo (USA).gba', 'rom', 8.4, '2 Nov 2026'), F('Pixel Garden (Europe).gba', 'rom', 16, '1 Nov 2026'), F('Tiny Tactics Arena (USA).gba', 'rom', 32, '28 Oct 2026')],
+  '/int/Documents': [F('notes.md', 'code', 0.02, '1 Nov 2026'), F('handheld-specs.ods', 'doc', 0.3, '30 Oct 2026')],
+  '/sd': [D('ROMs', 5, '12 Nov 2026'), D('Backups', 2, '1 Nov 2026'), D('Movies', 6, '20 Oct 2026'), F('README.txt', 'doc', 0.01, '1 Jan 2026')],
+  '/sd/ROMs': [D('GBA', 3, '12 Mar 2026'), D('SNES', 12, '12 Mar 2026'), F('Pocket Racer Turbo (USA).gba', 'rom', 8, '12 Mar 2026'), F("Legend of the Twin Hemispheres - Director's Cut (USA, Europe) (Rev 2).zip", 'archive', 598, '4 Feb 2026'), F('Comet Courier (Europe).sfc', 'rom', 4, '19 Oct 2026')],
+  '/sd/Movies': [F('trip-2026-08.mp4', 'video', 1830, '20 Aug 2026'), F('speedrun-pb.mp4', 'video', 412, '4 Oct 2026')]
+};
+const ROOTS = { '/int': 'Internal storage', '/sd': 'SD card' };
+const rootOf = p => p.startsWith('/sd') ? '/sd' : '/int';
+const ls = p => FS[p] || [];
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+const fmtSize = mb => mb >= 1000 ? (mb / 1000).toFixed(1) + ' GB' : mb >= 1 ? (mb >= 100 ? Math.round(mb) : mb.toFixed(1).replace(/\.0$/, '')) + ' MB' : Math.max(1, Math.round(mb * 1000)) + ' KB';
+// Folders have no size in this mock data, so they count as 32 MB per item inside them.
+const sizeOf = (p, names) => ls(p).filter(e => names.includes(e.n)).reduce((a, e) => a + (e.t === 'folder' ? (e.count || 0) * 32 : e.mb || 0), 0);
+const lastSeg = p => p === rootOf(p) ? ROOTS[p] : p.split('/').pop();
+
+/* ---------------- Accents (provisional placeholders, final values in HEM-6) ---------------- */
+const ACCENTS = {
+  blue: ['#2F5BD3', '#FFFFFF', '#8AA8F8', '#0B1430'], teal: ['#0F766E', '#FFFFFF', '#5CC8BC', '#04201D'],
+  green: ['#2E7D32', '#FFFFFF', '#7CC47F', '#0A2010'], amber: ['#8A5A00', '#FFFFFF', '#E8B54A', '#2A1C00'],
+  orange: ['#B4480F', '#FFFFFF', '#F29A5C', '#2C1200'], red: ['#B42335', '#FFFFFF', '#F28B95', '#2E070C'],
+  pink: ['#A8306E', '#FFFFFF', '#F08CC0', '#2E0A1D'], violet: ['#6941C6', '#FFFFFF', '#B39BF5', '#1A0E3A']
+};
+
+/* ---------------- State ---------------- */
+const pane = path => ({ tabs: [{ path, sel: [] }], tab: 0 });
+const S = {
+  screen: 'single', device: 'phone', layout: 'single', theme: 'dark', input: 'touch', dir: 'ltr', accent: 'blue', you: false,
+  panes: [pane('/int/Download/ROMs'), pane('/sd/ROMs')], active: 0, focus: null,
+  clip: null, overlay: null, conflict: null, jobs: [], snack: null, settings: false, menuFor: null, applyAll: true
+};
+function systemTheme() { try { return matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch (e) { return 'dark'; } }
+S.theme = systemTheme();
+const tabOf = i => S.panes[i].tabs[S.panes[i].tab];
+const curPane = () => S.layout === 'single' ? 0 : S.active;
+
+// Reset to the plain Single or Dual screen for the current device, then each preset adds its state.
+const base = () => SCREENS[S.device === 'handheld' ? 'dual' : 'single']();
+const SCREENS = {
+  single() { Object.assign(S, { device: 'phone', layout: 'single', settings: false, overlay: null, clip: null, active: 0, snack: null });
+    S.panes[0] = pane('/int/Download/ROMs'); S.focus = 'p0-r-Pocket Racer Turbo (USA).gba'; },
+  dual() { Object.assign(S, { device: 'handheld', layout: 'dual', settings: false, overlay: null, clip: null, active: 0, snack: null });
+    S.panes[0] = pane('/int/Download/ROMs'); S.panes[0].tabs.push({ path: '/int/Download', sel: [] });
+    S.panes[1] = pane('/sd/ROMs'); S.focus = 'p0-r-Pocket Racer Turbo (USA).gba'; },
+  select() { base();
+    tabOf(0).sel = ["Legend of the Twin Hemispheres - Director's Cut (USA, Europe) (Rev 2).zip", 'Pocket Racer Turbo (USA).gba', 'Moonlit Harbor (Japan) (En).iso'];
+    S.focus = 'p0-r-Moonlit Harbor (Japan) (En).iso'; },
+  conflict() { base();
+    if (S.layout === 'single') { S.panes[0] = pane('/sd/ROMs'); }
+    startConflict(['Pocket Racer Turbo (USA).gba', "Legend of the Twin Hemispheres - Director's Cut (USA, Europe) (Rev 2).zip", 'Moonlit Harbor (Japan) (En).iso'], '/int/Download/ROMs', '/sd/ROMs', 'copy'); },
+  queue() { base();
+    S.jobs = [
+      { id: 1, kind: 'Copying', n: 3, mb: 1202, done: 0.46, from: '/int/Download/ROMs', to: '/sd/ROMs', st: 'run' },
+      { id: 2, kind: 'Moving', n: 1, mb: 96.8, done: 0, from: '/int/Download', to: '/sd/Backups', st: 'wait' },
+      { id: 3, kind: 'Copied', n: 12, mb: 340, done: 1, from: '/int/Pictures', to: '/sd/Backups', st: 'done' }];
+    S.overlay = 'queue'; S.focus = 'q-pause-1'; },
+  settings() { base(); S.settings = true; S.focus = 'set-theme-' + S.theme; }
+};
+
+/* ---------------- Rendering ---------------- */
+const dev = document.getElementById('dev');
+const pad = () => S.input === 'pad';
+function f(id) { return `data-f="${esc(id)}"`; }
+
+// Middle cut: keep the tail (trailing "(Region) (Rev)" groups and the extension), ellipsize the start part.
+function middleCut(n) {
+  if (n.length <= 26) return `<span class="a">${esc(n)}</span>`;
+  const m = n.match(/((?:\s\([^()]*\))*)(\.[A-Za-z0-9]{1,5})?$/);
+  const gs = typeof Intl !== 'undefined' && Intl.Segmenter ? [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(n)].map(x => x.segment) : Array.from(n);
+  const tail = m && m[0].length >= 4 && m[0].length <= 28 ? m[0] : gs.slice(-12).join(''); // whole graphemes only
+  const head = n.slice(0, n.length - tail.length).trimEnd();
+  return `<span class="a">${esc(head)}</span><span class="b">${esc(tail.startsWith(' ') ? '\u00a0' + tail.trimStart() : tail)}</span>`;
+}
+function rowHTML(pi, e, sel) {
+  const id = `p${pi}-r-${e.n}`;
+  const on = sel.includes(e.n);
+  const nameHTML = middleCut(e.n);
+  const meta = e.t === 'folder' ? plural(e.count, 'item') : fmtSize(e.mb);
+  const lead = sel.length ? `<span class="chk" aria-hidden="true">${ic('check')}</span>` : '';
+  return `<div class="row" role="option" aria-selected="${on}" ${f(id)} data-pane="${pi}" data-act="row" data-n="${esc(e.n)}" aria-label="${esc(e.n)}, ${e.t === 'folder' ? 'folder, ' + meta : meta + ', ' + e.date}">
+    ${lead}<span class="ico" style="--c: var(--ft-${e.t})">${ic(e.t)}</span><span class="nm" dir="auto" title="${esc(e.n)}">${nameHTML}</span><span class="meta">${meta}</span></div>`;
+}
+function listHTML(pi) {
+  const t = tabOf(pi), items = ls(t.path);
+  if (!items.length) return `<div class="list" data-scroll="p${pi}"><div class="empty">${ic('folder')}<b>This folder is empty</b><span>Paste or create a file here.</span></div></div>`;
+  return `<div class="list${t.sel.length ? ' selecting' : ''}" role="listbox" aria-multiselectable="true" aria-label="${esc(lastSeg(t.path))}" data-scroll="p${pi}">${items.map(e => rowHTML(pi, e, t.sel)).join('')}</div>`;
+}
+function crumbsHTML(pi) {
+  const p = tabOf(pi).path, root = rootOf(p);
+  const parts = [root, ...p.slice(root.length).split('/').filter(Boolean)];
+  let acc = '';
+  return `<nav class="crumbs" aria-label="Path">${parts.map((s, i) => { acc = i ? acc + '/' + s : s;
+    const last = i === parts.length - 1;
+    return `${i ? `<span class="sep" aria-hidden="true">›</span>` : ''}<button class="crumb" ${last ? 'aria-current="page"' : ''} ${f(`p${pi}-c-${acc}`)} data-pane="${pi}" data-act="crumb" data-p="${esc(acc)}">${esc(i ? s : ROOTS[s])}</button>`; }).join('')}</nav>`;
+}
+function qchipHTML() {
+  const live = S.jobs.filter(j => j.st !== 'done');
+  if (!live.length) return '';
+  const run = live.find(j => j.st === 'run') || live[0];
+  const pct = Math.round(run.done * 100);
+  return `<button class="chip qchip" ${f('qchip')} data-act="queue" aria-label="${live.length} operations, ${pct} percent. Open queue">${ic('queue')}<span>${live.length} · ${pct}%</span><span class="bar"><i style="width:${pct}%"></i></span></button>`;
+}
+function selInfo(pi) { const t = tabOf(pi), mb = sizeOf(t.path, t.sel); return `${t.sel.length} selected${mb ? ' · ' + fmtSize(mb) : ''}`; }
+
+function singleHTML() {
+  const t = tabOf(0), sel = t.sel.length;
+  const head = sel
+    ? `<div class="appbar selhead"><button class="ib" ${f('sel-clear')} data-act="selclear" aria-label="Leave selection">${ic('close')}</button><div class="ttl" style="font-variant-numeric:tabular-nums">${selInfo(0)}</div><button class="ib" ${f('sel-all')} data-act="selall" aria-label="Select all">${ic('selall')}</button></div>`
+    : `<div class="appbar"><button class="ib" ${f('drawer')} data-act="drawer" aria-label="Places">${ic('menu')}</button><div class="ttl">${esc(ROOTS[rootOf(t.path)])}</div>${qchipHTML()}<button class="ib" ${f('layout')} data-act="layout" aria-label="Switch to Dual">${ic('dual')}</button><button class="ib" ${f('search')} data-act="search" aria-label="Search this folder">${ic('search')}</button><button class="ib" ${f('more')} data-act="start" aria-label="More actions">${ic('more')}</button></div>`;
+  const bottom = sel
+    ? `<div class="actbar" role="toolbar" aria-label="Selection actions"><button class="act" ${f('a-copy')} data-act="copy">${ic('copy')}Copy</button><button class="act" ${f('a-cut')} data-act="cut">${ic('cut')}Cut</button><button class="act" ${f('a-rename')} data-act="toast" data-msg="Rename opens a dialog (not in this prototype)">${ic('rename')}Rename</button><button class="act" ${f('a-share')} data-act="toast" data-msg="Share opens the system sheet">${ic('share')}Share</button><button class="act danger" ${f('a-del')} data-act="delete">${ic('trash')}Delete</button></div>`
+    : S.clip ? `<div class="tray" role="region" aria-label="Clipboard">${ic('copy')}<div class="tx"><b>${plural(S.clip.names.length, 'item')}${S.clip.mb ? ' · ' + fmtSize(S.clip.mb) : ''}</b><span>${S.clip.mode === 'cut' ? 'Cut' : 'Copied'} from ${esc(lastSeg(S.clip.from))}</span></div><button class="btn primary" ${f('paste')} data-act="paste">${ic('paste')}Paste here</button><button class="ib" ${f('tray-x')} data-act="trayclose" aria-label="Clear clipboard">${ic('close')}</button></div>` : '';
+  const fab = !sel && !S.clip ? `<button class="fab" ${f('fab')} data-act="start" aria-label="New file or folder">${ic('plus')}</button>` : '';
+  return `<div class="single">${head}${crumbsHTML(0)}<div class="pane active" data-pane="0" style="flex:1;min-height:0">${listHTML(0)}${fab}</div>${bottom}</div>`;
+}
+
+function paneHTML(pi) {
+  const P0 = S.panes[pi], t = tabOf(pi), active = S.active === pi;
+  const tabs = t.sel.length && active
+    ? `<div class="psel" role="toolbar" aria-label="Selection actions"><button class="ib" ${f(`p${pi}-sx`)} data-act="selclear" aria-label="Leave selection">${ic('close')}</button><div class="ttl">${selInfo(pi)}</div>
+        <button class="btn" ${f(`p${pi}-cp`)} data-act="copyother">${ic('copy')}Copy ${ic('arrow')}</button><button class="btn" ${f(`p${pi}-mv`)} data-act="moveother">Move ${ic('arrow')}</button><button class="btn danger" ${f(`p${pi}-del`)} data-act="delete" aria-label="Delete">${ic('trash')}</button></div>`
+    : `<div class="tabs" role="tablist" aria-label="Tabs">${P0.tabs.map((tb, i) => `<button class="chip" role="tab" aria-selected="${i === P0.tab}" ${f(`p${pi}-t-${i}`)} data-pane="${pi}" data-act="tab" data-i="${i}">${ic(rootOf(tb.path) === '/sd' ? 'sd' : 'phone')}${esc(lastSeg(tb.path))}</button>`).join('')}<button class="chip" ${f(`p${pi}-t-add`)} data-pane="${pi}" data-act="tabadd" aria-label="New tab">${ic('plus')}</button></div>`;
+  return `<section class="pane ${active ? 'active' : ''}" data-pane="${pi}" aria-label="${(S.dir === 'rtl' ? 1 - pi : pi) === 0 ? 'Left' : 'Right'} pane${active ? ', active' : ''}"><div class="phead">${tabs}${crumbsHTML(pi)}</div>${listHTML(pi)}</section>`;
+}
+function railHTML() {
+  const cur = rootOf(tabOf(S.active).path);
+  const it = (id, icn, label, act, on) => `<button class="rail-i" ${f('rail-' + id)} data-act="${act}" data-p="${id === 'int' ? '/int' : '/sd'}" aria-label="${label}" title="${label}" ${on ? 'aria-current="true"' : ''}>${ic(icn)}</button>`;
+  return `<nav class="rail" aria-label="Places">${it('int', 'phone', 'Internal storage', 'place', !S.settings && cur === '/int')}${it('sd', 'sd', 'SD card', 'place', !S.settings && cur === '/sd')}${it('star', 'star', 'Bookmarks', 'toast', false)}${it('recent', 'history', 'Recent', 'toast', false)}${it('trash', 'trash', 'Trash', 'toast', false)}<span class="grow"></span>${it('set', 'settings', 'Settings', 'settings', S.settings)}</nav>`;
+}
+function dualHTML() {
+  const body = S.settings ? settingsHTML() : `${paneHTML(0)}${paneHTML(1)}`;
+  return `<div class="topbar"><div class="ttl">${S.settings ? 'Settings' : 'Hemisphere'}</div>${qchipHTML()}<button class="ib" ${f('layout')} data-act="layout" aria-label="Switch to Single">${ic('single')}</button><button class="ib" ${f('search')} data-act="search" aria-label="Search this folder">${ic('search')}</button><button class="ib" ${f('more')} data-act="start" aria-label="More actions">${ic('more')}</button></div><div class="dual">${railHTML()}${body}</div>`;
+}
+
+function settingsHTML() {
+  const th = ['system', 'light', 'dark', 'amoled'], names = { system: 'System', light: 'Light', dark: 'Dark', amoled: 'AMOLED' };
+  const cur = S.themeChoice || S.theme;
+  const sw = Object.keys(ACCENTS).map(k => { const a = ACCENTS[k], dark = S.theme !== 'light';
+    return `<button class="sw" role="radio" aria-checked="${S.accent === k}" aria-label="${k[0].toUpperCase() + k.slice(1)}" ${f('sw-' + k)} data-act="accent" data-v="${k}" style="--c:${dark ? a[2] : a[0]};--on:${dark ? a[3] : a[1]}">${ic('check')}</button>`; }).join('');
+  const back = S.layout === 'single' ? `<div class="appbar"><button class="ib" ${f('set-back')} data-act="setback" aria-label="Back">${ic('back')}</button><div class="ttl">Settings</div></div>` : '';
+  return `<div class="settings-wrap" style="flex:1;display:flex;flex-direction:column;min-height:0;min-width:0">${back}<div class="settings" data-scroll="set">
+    <div class="sec" id="sec-look">Appearance</div>
+    <div class="set-row" style="cursor:default"><div class="tx">Theme<span>AMOLED uses a true black background</span></div></div>
+    <div class="segs" role="radiogroup" aria-labelledby="sec-look">${th.map(k => `<button class="chip" role="radio" aria-selected="${cur === k}" aria-checked="${cur === k}" ${f('set-theme-' + k)} data-act="settheme" data-v="${k}">${cur === k ? ic('check') : ''}${names[k]}</button>`).join('')}</div>
+    <div class="set-row" style="cursor:default"><div class="tx">Accent color<span>Used for selection, focus and the active pane</span></div></div>
+    <div class="swatches" role="radiogroup" aria-label="Accent color">${sw}</div>
+    <div class="set-row" role="switch" aria-checked="${S.you}" ${f('set-you')} data-act="you"><div class="tx">Use wallpaper color<span>Android 12 and newer. Falls back to the nearest accent if it is hard to read.</span></div><span class="tog" aria-hidden="true"></span></div>
+    <div class="sec">Layout</div>
+    <div class="set-row" ${f('set-lp')} data-act="toast" data-msg="Opens a picker: Auto, Single, Dual"><div class="tx">Portrait<span>Auto: Single below 600dp wide</span></div><span class="val">Auto</span></div>
+    <div class="set-row" ${f('set-ll')} data-act="toast" data-msg="Opens a picker: Auto, Single, Dual"><div class="tx">Landscape<span>Saved for this device only</span></div><span class="val">Auto</span></div>
+    <div class="set-row" ${f('set-den')} data-act="toast" data-msg="Opens a picker: Comfortable, Default, Compact"><div class="tx">Row density<span>Compact is used with a gamepad</span></div><span class="val">Default</span></div>
+    <div class="sec">Gamepad</div>
+    <div class="set-row" ${f('set-face')} data-act="toast" data-msg="Opens a picker: Auto, Xbox, Nintendo"><div class="tx">Face buttons<span>Swaps A↔B and X↔Y for Nintendo-style pads</span></div><span class="val">Auto (Xbox)</span></div>
+    <div class="set-row" ${f('set-map')} data-act="toast" data-msg="Opens the button mapping screen"><div class="tx">Button mapping<span>Change what each button does</span></div><span class="val">Default</span></div>
+    <div class="sec">Trash</div>
+    <div class="set-row" ${f('set-trash')} data-act="toast" data-msg="Opens a picker: 7, 30, 90 days"><div class="tx">Keep deleted files<span>Then they are removed for good</span></div><span class="val">30 days</span></div>
+  </div></div>`;
+}
+
+// Place a 240dp-wide menu under an element, in device units, from its start edge (mirrored in RTL), kept inside the screen.
+function menuAt(el, dx, h) {
+  const r = el.getBoundingClientRect(), d = dev.getBoundingClientRect(), k = d.width / dev.offsetWidth;
+  const start = (S.dir === 'rtl' ? d.right - r.right : r.left - d.left) / k;
+  return { x: Math.max(8, Math.min(dev.offsetWidth - 240, start + dx)), y: Math.min(dev.offsetHeight - h, (r.bottom - d.top) / k) };
+}
+function hintsHTML() {
+  if (!pad()) return '';
+  const h = (g, t, sq) => `<span class="hint"><span class="gl ${sq ? 'sq' : ''}">${g}</span>${t}</span>`;
+  let parts;
+  if (S.overlay) parts = [h('A', 'Choose'), h('B', 'Close')];
+  else if (S.settings) parts = [h('A', 'Change'), h('B', 'Back')];
+  else if (tabOf(curPane()).sel.length) parts = [h('A', 'Open'), h('B', 'Clear'), h('X', 'Menu'), h('Y', 'Mark')].concat(S.device === 'phone' ? [] : [h('Start', 'Actions', 1)]);
+  else parts = [h('A', 'Open'), h('B', 'Back'), h('X', 'Menu'), h('Y', 'Mark')];
+  const end = S.layout === 'dual' && !S.overlay && !S.settings ? `<span class="hint end"><span class="keypair" dir="ltr"><span class="gl sq">L1</span><span class="gl sq">R1</span></span>Pane</span>` : `<span class="hint end"><span class="gl sq">Select</span>${S.layout === 'dual' ? 'Single' : 'Dual'}</span>`;
+  return `<div class="hints" aria-label="Gamepad buttons">${parts.join('')}${end}</div>`;
+}
+
+function overlayHTML() {
+  if (S.snack && !S.overlay) return `<div class="snack" role="status"><span>${esc(S.snack.msg)}</span>${S.snack.undo ? `<button class="btn text" ${f('undo')} data-act="undo">Undo</button>` : ''}</div>`;
+  if (!S.overlay) return '';
+  const scrim = `<div class="scrim" data-act="close"></div>`;
+  if (S.overlay === 'conflict') {
+    const c = S.conflict, name = c.list[c.i], a = ls(c.to).find(e => e.n === name), b = ls(c.from).find(e => e.n === name);
+    const left = c.list.length - c.i - 1;
+    const newer = Date.parse(b.date) > Date.parse(a.date), older = Date.parse(b.date) < Date.parse(a.date), bigger = b.mb > a.mb;
+    const amount = e => e.t === 'folder' ? plural(e.count, 'item') : fmtSize(e.mb);
+    return `${scrim}<div class="sheet scope" data-scroll="sheet" role="dialog" aria-modal="true" aria-labelledby="cf-t"><span class="grab"></span>
+      <h3 id="cf-t">A file with this name already exists</h3>
+      <p class="sub">${esc(name)}<br>${c.mode === 'move' ? 'Moving' : 'Copying'} to ${esc(lastSeg(c.to))} · conflict ${c.i + 1} of ${c.list.length}</p>
+      <div class="cmp"><div><span class="k">Already in ${esc(lastSeg(c.to))}</span><span class="v">${amount(a)}</span><span class="v">${a.date}</span></div>
+        <div><span class="k">${c.mode === 'move' ? 'Moving' : 'Copying'} in</span><span class="v">${amount(b)}</span><span class="v">${b.date}</span>
+        ${newer || older || bigger ? `<span class="tag">${ic('info')}${[newer && 'Newer', older && 'Older', bigger && 'Larger'].filter(Boolean).join(' · ')}</span>` : ''}</div></div>
+      ${left ? `<div class="ckrow" role="checkbox" aria-checked="${S.applyAll}" ${f('cf-all')} data-act="applyall"><span class="box">${ic('check')}</span>Do the same for the other ${left} conflict${left > 1 ? 's' : ''}</div>` : ''}
+      <div class="btns"><button class="btn" ${f('cf-skip')} data-act="cf" data-v="skip">Skip</button><button class="btn" ${f('cf-replace')} data-act="cf" data-v="replace">Replace</button><button class="btn primary" ${f('cf-keep')} data-act="cf" data-v="keep">Keep both</button></div></div>`;
+  }
+  if (S.overlay === 'queue') {
+    const job = j => {
+      const pct = Math.round(j.done * 100), doneMB = j.mb * j.done;
+      const st = j.st === 'done' ? `<span class="state-ok">${ic('ok')}Finished</span>`
+        : j.st === 'wait' ? `<button class="ib" ${f('q-cancel-' + j.id)} data-act="qcancel" data-i="${j.id}" aria-label="Cancel">${ic('close')}</button>`
+        : `<button class="ib" ${f('q-pause-' + j.id)} data-act="qpause" data-i="${j.id}" aria-label="${j.st === 'pause' ? 'Resume' : 'Pause'}">${ic(j.st === 'pause' ? 'play' : 'pause')}</button><button class="ib" ${f('q-cancel-' + j.id)} data-act="qcancel" data-i="${j.id}" aria-label="Cancel">${ic('close')}</button>`;
+      const l2 = j.st === 'done' ? `${fmtSize(j.mb)} · ${esc(lastSeg(j.from))} › ${esc(lastSeg(j.to))}`
+        : j.st === 'wait' ? `Waiting · ${fmtSize(j.mb)} · ${esc(lastSeg(j.from))} › ${esc(lastSeg(j.to))}`
+        : `${fmtSize(doneMB)} of ${fmtSize(j.mb)} · ${pct}%${j.st === 'pause' ? ' · Paused' : ' · 18 MB/s · ' + Math.max(1, Math.round((j.mb - doneMB) / 18)) + ' s left'}`;
+      return `<div class="job"><div class="l1"><b>${j.kind} ${j.n} item${j.n > 1 ? 's' : ''} to ${esc(lastSeg(j.to))}</b>${st}</div>${j.st === 'done' ? '' : `<div class="prog" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="${j.kind}"><i style="width:${pct}%"></i></div>`}<div class="l2">${l2}</div></div>`;
+    };
+    const live = S.jobs.filter(j => j.st !== 'done'), done = S.jobs.filter(j => j.st === 'done');
+    return `${scrim}<div class="sheet scope" data-scroll="sheet" role="dialog" aria-modal="true" aria-labelledby="q-t"><span class="grab"></span><h3 id="q-t">Operations</h3>
+      ${live.length ? `<div class="qlabel">In progress</div>${live.map(job).join('')}` : '<p class="sub">Nothing is running.</p>'}
+      ${done.length ? `<div class="qlabel">Done</div>${done.map(job).join('')}` : ''}
+      <div class="btns"><button class="btn" ${f('q-close')} data-act="close">Close</button></div></div>`;
+  }
+  if (S.overlay === 'menu' || S.overlay === 'start') {
+    const items = S.overlay === 'menu'
+      ? [['folder', 'Open', 'open'], ['copy', 'Copy', 'copy1'], ['cut', 'Cut', 'cut1'], ['rename', 'Rename', 'toast'], ['star', 'Add to bookmarks', 'toast'], ['props', 'Properties', 'toast'], ['trash', 'Delete', 'delete1', 'danger']]
+      : [['newfolder', 'New folder', 'toast'], ['file', 'New file', 'toast'], ['sort', 'Sort and view', 'toast'], ['selall', 'Select all', 'selall'], ['settings', 'Settings', 'settings']];
+    const pos = S.menuPos || { x: 40, y: 120 };
+    return `${scrim}<div class="menu scope" role="menu" style="inset-inline-start:${pos.x}px;top:${pos.y}px">${S.overlay === 'menu' ? `<div class="sr">${esc(S.menuFor)}</div>` : ''}${items.map((m, i) => `<button class="menu-i ${m[3] || ''}" role="menuitem" ${f('m-' + i)} data-act="${m[2]}" data-msg="${m[1]} (not in this prototype)">${ic(m[0])}${m[1]}</button>`).join('')}</div>`;
+  }
+  if (S.overlay === 'drawer') {
+    const cur = rootOf(tabOf(0).path);
+    return `${scrim}<nav class="drawer scope" aria-label="Places"><h4>Storage</h4>
+      <button class="menu-i" ${f('d-int')} data-act="place" data-p="/int" ${cur === '/int' ? 'aria-current="true"' : ''}>${ic('phone')}Internal storage<span class="meta">41 GB free</span></button>
+      <button class="menu-i" ${f('d-sd')} data-act="place" data-p="/sd" ${cur === '/sd' ? 'aria-current="true"' : ''}>${ic('sd')}SD card<span class="meta">212 GB free</span></button>
+      <h4>Places</h4><button class="menu-i" ${f('d-star')} data-act="toast" data-msg="Bookmarks (not in this prototype)">${ic('star')}Bookmarks</button>
+      <button class="menu-i" ${f('d-recent')} data-act="toast" data-msg="Recent (not in this prototype)">${ic('history')}Recent</button>
+      <button class="menu-i" ${f('d-trash')} data-act="toast" data-msg="Trash (not in this prototype)">${ic('trash')}Trash</button>
+      <button class="menu-i" ${f('d-set')} data-act="settings">${ic('settings')}Settings</button></nav>`;
+  }
+  return '';
+}
+
+let lastOverlay = null, lastFocus = null, returnFocus = null;
+function render() {
+  const saved = {};
+  dev.querySelectorAll('[data-scroll]').forEach(el => saved[el.dataset.scroll] = el.scrollTop);
+  dev.dir = S.dir; dev.dataset.d = S.device; dev.dataset.t = S.theme; dev.dataset.in = S.input;
+  dev.dataset.tray = S.clip && S.layout === 'single' && !S.settings && !tabOf(curPane()).sel.length ? '1' : ''; dev.dataset.snack = S.snack && !S.overlay ? '1' : '';
+  const a = ACCENTS[S.accent], dark = S.theme !== 'light';
+  dev.style.setProperty('--a-fill', dark ? a[2] : a[0]); dev.style.setProperty('--a-on', dark ? a[3] : a[1]);
+  dev.style.setProperty('--a-text', dark ? a[2] : a[0]); dev.style.setProperty('--a-focus', dark ? a[2] : a[0]);
+  const main = S.layout === 'dual' ? dualHTML() : (S.settings ? settingsHTML() : singleHTML());
+  dev.innerHTML = `<div class="sbar" aria-hidden="true"><span>16:07</span><span>82%</span></div>${main}${hintsHTML()}${S.device === 'phone' ? '<div class="navbar" aria-hidden="true"><i></i></div>' : ''}${overlayHTML()}`;
+  dev.querySelectorAll('[data-scroll]').forEach(el => { if (saved[el.dataset.scroll] != null) el.scrollTop = saved[el.dataset.scroll]; });
+  // A sheet, menu or drawer returns focus to what opened it when it closes.
+  if (!lastOverlay && S.overlay) returnFocus = lastFocus;
+  else if (lastOverlay && !S.overlay && returnFocus) { if (!S.focus || !dev.querySelector(`[data-f="${CSS.escape(S.focus)}"]`)) S.focus = returnFocus; returnFocus = null; }
+  applyFocus(false);
+  lastOverlay = S.overlay;
+  syncControls(); notes(); fit();
+}
+
+/* ---------------- Focus (gamepad) ---------------- */
+function scopeEl() { return dev.querySelector('.scope') || dev; }
+function focusables() { return [...scopeEl().querySelectorAll('[data-f]')].filter(el => el.offsetParent !== null); }
+function applyFocus(scroll) {
+  dev.querySelectorAll('.gf').forEach(el => el.classList.remove('gf'));
+  const list = focusables();
+  let el = list.find(e => e.dataset.f === S.focus);
+  if (!el) { el = list.find(e => e.classList.contains('row') && +e.dataset.pane === curPane()) || list[0]; if (el) S.focus = el.dataset.f; }
+  if (!el) return;
+  el.classList.add('gf'); lastFocus = S.focus;
+  if (scroll !== false || pad()) keepVisible(el);
+}
+function keepVisible(el) {
+  const sc = el.closest('[data-scroll]'); if (!sc) return;
+  const top = el.offsetTop, h = el.offsetHeight;
+  if (top < sc.scrollTop) sc.scrollTop = top - 4; else if (top + h > sc.scrollTop + sc.clientHeight) sc.scrollTop = top + h - sc.clientHeight + 4;
+}
+function move(dir) {
+  const list = focusables(), cur = list.find(e => e.dataset.f === S.focus);
+  if (!cur) { applyFocus(); return; }
+  const r = cur.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const rtl = S.dir === 'rtl';
+  let best = null, bs = Infinity;
+  for (const el of list) {
+    if (el === cur) continue;
+    const q = el.getBoundingClientRect(), x = q.left + q.width / 2, y = q.top + q.height / 2, dx = x - cx, dy = y - cy;
+    let prim, sec;
+    if (dir === 'down') { if (q.top < r.bottom - 2) continue; prim = dy; sec = Math.abs(dx); }
+    else if (dir === 'up') { if (q.bottom > r.top + 2) continue; prim = -dy; sec = Math.abs(dx); }
+    else if (dir === 'right') { if (q.left < r.right - 2) continue; prim = dx; sec = Math.abs(dy); }
+    else { if (q.right > r.left + 2) continue; prim = -dx; sec = Math.abs(dy); }
+    const s = prim + sec * 2.5;
+    if (s < bs) { bs = s; best = el; }
+  }
+  if (best) setFocus(best);
+}
+function setFocus(el) {
+  S.focus = el.dataset.f;
+  if (el.dataset.pane != null && S.layout === 'dual' && +el.dataset.pane !== S.active) { S.active = +el.dataset.pane; render(); return; }
+  applyFocus(true);
+  announce(el.getAttribute('aria-label') || el.textContent.trim());
+}
+function announce(t) { document.getElementById('announce').textContent = t; }
+
+/* ---------------- Actions ---------------- */
+let snackTimer;
+function toast(msg, undo) { S.snack = { msg, undo }; clearTimeout(snackTimer); snackTimer = setTimeout(() => { S.snack = null; render(); }, 4000); }
+function openEntry(pi, name) {
+  const t = tabOf(pi), e = ls(t.path).find(x => x.n === name); if (!e) return;
+  if (t.sel.length) { toggleSel(pi, name); return; }
+  if (e.t === 'folder') { t.path = t.path + '/' + name; t.sel = []; S.focus = null; }
+  else toast(`${name} opens in its viewer (not in this prototype)`);
+}
+function toggleSel(pi, name) { const t = tabOf(pi), i = t.sel.indexOf(name); i < 0 ? t.sel.push(name) : t.sel.splice(i, 1); }
+// Going up focuses the folder you came from (design-system.md section 14).
+function goUp(pi) { const t = tabOf(pi); if (t.path === rootOf(t.path)) return false; const child = lastSeg(t.path); t.path = t.path.slice(0, t.path.lastIndexOf('/')); S.focus = `p${pi}-r-${child}`; return true; }
+function startConflict(names, from, to, mode) {
+  const clash = names.filter(n => ls(to).some(e => e.n === n));
+  if (!clash.length) { addJob(names, from, to, mode); return; }
+  S.conflict = { list: clash, i: 0, all: names, from, to, mode }; S.overlay = 'conflict'; S.focus = 'cf-keep'; S.applyAll = true;
+}
+function addJob(names, from, to, mode) {
+  const mb = sizeOf(from, names);
+  S.jobs.unshift({ id: Date.now(), kind: mode === 'move' ? 'Moving' : 'Copying', n: names.length, mb, done: 0, from, to, st: S.jobs.some(j => j.st === 'run') ? 'wait' : 'run' });
+  S.clip = null;
+  S.overlay = null; toast(`${mode === 'move' ? 'Moving' : 'Copying'} ${names.length} item${names.length > 1 ? 's' : ''} to ${lastSeg(to)}`);
+}
+function act(el) {
+  const a = el.dataset.act, pi = el.dataset.pane != null ? +el.dataset.pane : curPane();
+  switch (a) {
+    case 'row': if (S.layout === 'dual') S.active = pi; S.focus = el.dataset.f; openEntry(pi, el.dataset.n); break;
+    case 'crumb': tabOf(pi).path = el.dataset.p; tabOf(pi).sel = []; S.focus = null; if (S.layout === 'dual') S.active = pi; break;
+    case 'tab': S.panes[pi].tab = +el.dataset.i; S.active = pi; S.focus = el.dataset.f; break;
+    case 'tabadd': if (S.panes[pi].tabs.length >= 8) { toast('A pane holds up to 8 tabs'); break; } S.panes[pi].tabs.push({ path: rootOf(tabOf(pi).path), sel: [] }); S.panes[pi].tab = S.panes[pi].tabs.length - 1; S.active = pi; break;
+    case 'place': S.overlay = null; closeSettings(); tabOf(curPane()).path = el.dataset.p; tabOf(curPane()).sel = []; S.focus = null; break;
+    case 'drawer': S.overlay = 'drawer'; S.focus = 'd-int'; break;
+    case 'layout': S.layout = S.layout === 'dual' ? 'single' : 'dual'; S.active = 0; S.focus = null; S.overlay = null; break;
+    case 'search': toast('Search is scoped to this folder (not in this prototype)'); break;
+    case 'start': S.menuPos = menuAt(el, -180, 300); S.overlay = 'start'; S.focus = 'm-0'; break;
+    case 'selclear': tabOf(curPane()).sel = []; break;
+    case 'selall': S.overlay = null; tabOf(curPane()).sel = ls(tabOf(curPane()).path).map(e => e.n); break;
+    case 'copy': case 'cut': { const t = tabOf(0); S.clip = { names: [...t.sel], from: t.path, mb: sizeOf(t.path, t.sel), mode: a }; t.sel = []; S.focus = 'drawer'; toast(`${plural(S.clip.names.length, 'item')} on the clipboard. Go to a folder and paste.`); break; }
+    case 'copy1': case 'cut1': { S.overlay = null; const t = tabOf(curPane()), n = S.menuFor;
+      if (S.layout === 'dual') startConflict([n], t.path, tabOf(1 - S.active).path, a === 'cut1' ? 'move' : 'copy');
+      else { S.clip = { names: [n], from: t.path, mb: sizeOf(t.path, [n]), mode: a === 'cut1' ? 'cut' : 'copy' }; } break; }
+    case 'open': S.overlay = null; openEntry(curPane(), S.menuFor); break;
+    case 'paste': { const c = S.clip, to = tabOf(0).path; if (to === c.from) { toast('Pick another folder to paste into'); break; } startConflict(c.names, c.from, to, c.mode === 'cut' ? 'move' : 'copy'); break; }
+    case 'trayclose': S.clip = null; S.focus = null; break;
+    case 'copyother': case 'moveother': { const t = tabOf(S.active), names = [...t.sel]; t.sel = []; startConflict(names, t.path, tabOf(1 - S.active).path, a === 'moveother' ? 'move' : 'copy'); break; }
+    case 'delete': case 'delete1': { const t = tabOf(curPane()); const n = a === 'delete1' ? 1 : t.sel.length; t.sel = []; S.overlay = null; toast(`Moved ${n} item${n > 1 ? 's' : ''} to Trash`, true); break; }
+    case 'undo': S.snack = null; toast('Restored from Trash'); break;
+    case 'applyall': S.applyAll = !S.applyAll; break;
+    case 'cf': { const c = S.conflict, left = c.list.length - c.i - 1;
+      c.skipped = c.skipped || [];
+      if (el.dataset.v === 'skip') c.skipped.push(...(left && S.applyAll ? c.list.slice(c.i) : [c.list[c.i]]));
+      if (left && !S.applyAll) { c.i++; S.focus = 'cf-keep'; break; }
+      const names = c.all.filter(n => !c.skipped.includes(n));
+      if (names.length) addJob(names, c.from, c.to, c.mode); else { S.overlay = null; S.clip = null; toast('Nothing was copied'); }
+      S.conflict = null; S.focus = null; break; }
+    case 'queue': S.overlay = 'queue'; S.focus = null; break;
+    case 'qpause': { const j = S.jobs.find(x => x.id == el.dataset.i); if (!j || j.st === 'done') break;
+      j.st = j.st === 'pause' ? (S.jobs.some(x => x.st === 'run') ? 'wait' : 'run') : 'pause'; nextJob(); break; }
+    case 'qcancel': S.jobs = S.jobs.filter(x => x.id != el.dataset.i); S.focus = null; nextJob(); break;
+    case 'close': S.overlay = null; S.focus = null; break;
+    case 'settings': S.overlay = null; S.settings = true; S.screen = 'settings'; S.focus = null; break;
+    case 'setback': closeSettings(); S.focus = null; break;
+    case 'settheme': S.themeChoice = el.dataset.v; S.theme = el.dataset.v === 'system' ? systemTheme() : el.dataset.v; S.focus = el.dataset.f; break;
+    case 'accent': S.accent = el.dataset.v; S.focus = el.dataset.f; break;
+    case 'you': S.you = !S.you; break;
+    case 'toast': S.overlay = null; toast(el.dataset.msg || `${el.getAttribute('aria-label')} (not in this prototype)`); break;
+  }
+  render();
+}
+
+/* ---------------- Input: touch / mouse ---------------- */
+let lp = null, lpFired = false;
+let pointerDown = false;
+addEventListener('pointerup', () => { pointerDown = false; }); addEventListener('pointercancel', () => { pointerDown = false; });
+dev.addEventListener('pointerdown', e => {
+  pointerDown = true;
+  // Switch to touch, but leave the layout alone until the click lands: pad mode has other sizes, so a
+  // relayout here would move the button out from under the finger.
+  S.input = 'touch';
+  const row = e.target.closest('.row'); lpFired = false;
+  if (row) lp = setTimeout(() => { lpFired = true; const pi = +row.dataset.pane; if (S.layout === 'dual') S.active = pi; toggleSel(pi, row.dataset.n); render(); }, 450);
+});
+['pointerup', 'pointerleave', 'pointercancel'].forEach(t => dev.addEventListener(t, () => clearTimeout(lp)));
+dev.addEventListener('contextmenu', e => { if (e.target.closest('.row')) e.preventDefault(); });
+dev.addEventListener('click', e => {
+  if (lpFired) { lpFired = false; return; }
+  const el = e.target.closest('[data-act]'); if (!el) { render(); return; }
+  if (el.dataset.f) S.focus = el.dataset.f;
+  act(el);
+});
+
+/* ---------------- Input: gamepad (keyboard or a real pad) ---------------- */
+function button(b) {
+  if (S.input !== 'pad') { S.input = 'pad'; render(); if (b !== 'up' && b !== 'down' && b !== 'left' && b !== 'right') return; }
+  const cur = focusables().find(el => el.dataset.f === S.focus);
+  const pi = cur && cur.dataset.pane != null ? +cur.dataset.pane : curPane();
+  switch (b) {
+    case 'up': case 'down': case 'left': case 'right': move(b); return;
+    case 'A': if (cur) { cur.click(); } return;
+    case 'B':
+      if (S.overlay) { S.overlay = null; S.focus = null; }
+      else if (tabOf(pi).sel.length) tabOf(pi).sel = [];
+      else if (S.settings) { closeSettings(); S.focus = null; }
+      else if (!goUp(pi)) return;
+      break;
+    case 'X': if (cur && cur.classList.contains('row')) { S.menuFor = cur.dataset.n; S.menuPos = menuAt(cur, 40, 330); S.overlay = 'menu'; S.focus = 'm-0'; } else return; break;
+    case 'Y': if (cur && cur.classList.contains('row')) toggleSel(+cur.dataset.pane, cur.dataset.n); else return; break;
+    case 'L1': case 'R1': {
+      if (S.layout !== 'dual' || S.overlay || S.settings) return;
+      // L1 always goes to the pane on the physical left, R1 to the right (mirrored in RTL).
+      const leftPane = S.dir === 'rtl' ? 1 : 0; S.active = b === 'L1' ? leftPane : 1 - leftPane; S.focus = null; break; }
+    case 'L2': case 'R2': { const P0 = S.panes[pi], n = P0.tabs.length; P0.tab = (P0.tab + (b === 'R2' ? 1 : n - 1)) % n; S.focus = null; break; }
+    case 'Select': S.layout = S.layout === 'dual' ? 'single' : 'dual'; S.active = 0; S.focus = null; S.overlay = null; break;
+    case 'Start': { const m = dev.querySelector('[data-f="more"]'); if (m && !S.overlay) act(m); return; }
+  }
+  render();
+}
+const KEYS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Enter: 'A', Escape: 'B', Backspace: 'B', x: 'X', y: 'Y', q: 'L1', e: 'R1', z: 'L2', c: 'R2', s: 'Select', p: 'Start' };
+document.addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const inCtl = e.target.closest && e.target.closest('.ctl');
+  const k = KEYS[e.key.length === 1 ? e.key.toLowerCase() : e.key];
+  if (!k) return;
+  if (inCtl) return; // keyboard use of the control bar stays normal
+  e.preventDefault(); button(k);
+});
+const PADMAP = { 0: 'A', 1: 'B', 2: 'X', 3: 'Y', 4: 'L1', 5: 'R1', 6: 'L2', 7: 'R2', 8: 'Select', 9: 'Start', 12: 'up', 13: 'down', 14: 'left', 15: 'right' };
+let prev = {}, padName = '';
+function poll() {
+  const pads = navigator.getGamepads ? [...navigator.getGamepads()].filter(Boolean) : [];
+  for (const g of pads) {
+    padName = g.id;
+    g.buttons.forEach((bt, i) => { const was = prev[g.index + ':' + i]; if (bt.pressed && !was && PADMAP[i]) button(PADMAP[i]); prev[g.index + ':' + i] = bt.pressed; });
+    const ax = g.axes, st = [ax[1] < -.6 && 'up', ax[1] > .6 && 'down', ax[0] < -.6 && 'left', ax[0] > .6 && 'right'];
+    st.forEach((s, i) => { const key = g.index + ':ax' + i; if (s && !prev[key]) button(s); prev[key] = !!s; });
+  }
+  if (pads.length) requestAnimationFrame(poll); else polling = false;
+}
+let polling = false;
+addEventListener('gamepadconnected', () => { notes(); if (!polling) { polling = true; requestAnimationFrame(poll); } });
+addEventListener('gamepaddisconnected', () => notes());
+
+/* ---------------- Queue progress tick ---------------- */
+// One job runs at a time: when none is running, the first waiting job starts.
+function closeSettings() { if (S.settings) { S.settings = false; S.screen = S.layout === 'dual' ? 'dual' : 'single'; } }
+function nextJob() { if (!S.jobs.some(j => j.st === 'run')) { const nx = S.jobs.find(j => j.st === 'wait'); if (nx) nx.st = 'run'; } }
+setInterval(() => {
+  const run = S.jobs.find(j => j.st === 'run'); if (!run) return;
+  run.done = Math.min(1, run.done + 18 / run.mb * 0.8);
+  if (run.done >= 1) { run.st = 'done'; run.kind = run.kind === 'Moving' ? 'Moved' : 'Copied'; nextJob(); }
+  if (!pointerDown) render(); // a rebuild mid-tap would drop the tap
+}, 800);
+
+/* ---------------- Controls, fit, notes ---------------- */
+document.querySelectorAll('.seg').forEach(g => g.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const k = g.dataset.k, v = b.dataset.v;
+  if (e.detail > 0) b.blur(); // after a mouse click, keys drive the mockup again
+  if (k === 'screen') { S.screen = v; S.jobs = v === 'queue' ? S.jobs : []; S.conflict = null; S.snack = null; SCREENS[v](); }
+  else if (k === 'device') { S.device = v; S.layout = v === 'handheld' ? 'dual' : 'single'; S.active = 0; S.focus = null;
+    if (S.screen === 'single' || S.screen === 'dual') S.screen = S.layout;
+    if (['drawer', 'menu', 'start'].includes(S.overlay)) S.overlay = null; }
+  else if (k === 'theme') { S.theme = v; S.themeChoice = v; }
+  else if (k === 'dir') { S.dir = v; }
+  else S[k] = v;
+  render();
+}));
+function syncControls() {
+  document.querySelectorAll('.seg').forEach(g => g.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(S[g.dataset.k] === b.dataset.v))));
+}
+function fit() {
+  const st = document.getElementById('stage'), h = document.getElementById('holder');
+  const w = dev.offsetWidth, ht = dev.offsetHeight, pad = 20;
+  const avail = Math.max(240, st.clientWidth - pad * 2), maxH = Math.max(420, innerHeight - 40);
+  const k = Math.min(1, avail / w, S.device === 'phone' ? maxH / ht : 1);
+  dev.style.transform = `translate(10px, 10px) scale(${k})`;
+  h.style.width = (w * k + pad) + 'px'; h.style.height = (ht * k + pad) + 'px';
+}
+let fitQueued = false;
+addEventListener('resize', () => { if (!fitQueued) { fitQueued = true; requestAnimationFrame(() => { fitQueued = false; fit(); }); } });
+
+const NOTES = {
+  single: ['Phone · Single', 'One pane below 600dp wide. Title, path, rows, one primary action (the + button).', [
+    'Row: 48dp touch, 40dp gamepad. Icon 32dp / 24dp, radius 4.', 'Name: body 14/400, cut in the middle so the region and extension stay visible.', 'Meta: meta 12/400, tabular numbers, text.secondary.', 'Dividers: border.default, inset to the name.', 'FAB: 56dp, accent.fill, radius 12. Hidden while selecting or while the clipboard tray shows.']],
+  dual: ['Handheld · Dual', 'Two panes from 600dp. Each pane has its own tabs, path and back stack.', [
+    'Rail: 56dp, places on top, Settings at the bottom. Reach it with D-pad left.', 'Active pane: 3dp accent bar on top of the pane header.', 'Inactive pane: text steps down one token (primary → secondary, secondary → tertiary), no opacity.', 'Tabs: 30dp chips, selected uses accent.tint. L2/R2 switch tabs.', 'L1 goes to the left pane, R1 to the right pane, in LTR and RTL.']],
+  select: ['Selection + clipboard', 'Long-press a row, or press Y on a gamepad. Selected rows get a check mark and accent.tint.', [
+    'Header: "3 selected · 1.2 GB", heading 16/500 on accent.tint.', 'Phone: action bar at the bottom (Copy, Cut, Rename, Share, Delete). Delete uses danger with an icon and label.', 'Copy or Cut puts the items on the clipboard tray, which stays while you move between folders and places.', 'Dual: actions sit in the active pane header. Copy → and Move → go straight to the other pane, no clipboard.', 'Try: tap Copy, open the menu, choose SD card, then Paste here.']],
+  conflict: ['Conflict sheet', 'One sheet per conflict, with the two files side by side.', [
+    'Sheet: surface.overlay, radius 12 on top (phone) or a centered 520dp dialog (handheld).', 'Compare cards: surface.raised with border.default. "Newer" and "Larger" are words with an icon, not only color.', 'Keep both is the primary (accent.fill) because it never loses data. Replace and Skip are outlined.', 'Checkbox "Do the same for the other N" uses border.strong when off.']],
+  queue: ['Queue sheet', 'Copy and move run in the background. The chip in the top bar shows count and percent; tap it for the list.', [
+    'Progress: 6dp bar, accent.fill on border.default.', 'Finished jobs show a check icon and the word "Finished" in success.', 'Pause and Cancel are 48dp icon buttons with labels for TalkBack.', 'The system notification mirrors this list (not drawn here).']],
+  settings: ['Settings', 'Theme and accent pickers, layout pins and gamepad options.', [
+    'Theme: four chips (System, Light, Dark, AMOLED). The prototype theme follows your pick.', 'Accent: 8 swatches, 36dp circles in 48dp targets, selected one has a check and a 2dp ring. Values are placeholders until HEM-6.', 'Switch: border.strong track when off (meets 3:1), accent.fill when on.', 'Layout pins are saved per device and per orientation.']]
+};
+function notes() {
+  const n = NOTES[S.screen] || NOTES.single;
+  const pads = navigator.getGamepads ? [...navigator.getGamepads()].filter(Boolean) : [];
+  document.getElementById('notes').innerHTML = `<h2>${n[0]}</h2><p>${n[1]}</p><h3>Values</h3><ul>${n[2].map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+    <h3>Gamepad on a keyboard</h3><div class="keys"><kbd>Arrows</kbd><span>D-pad</span><kbd>Enter</kbd><span>Ⓐ Open</span><kbd>Esc</kbd><span>Ⓑ Back</span><kbd>X</kbd><span>Ⓧ Menu</span><kbd>Y</kbd><span>Ⓨ Mark</span><kbd>Q / E</kbd><span>L1 / R1 Pane</span><kbd>Z / C</kbd><span>L2 / R2 Tab</span><kbd>S</kbd><span>Select: Single ↔ Dual</span><kbd>P</kbd><span>Start: Actions</span></div>
+    <p class="pad-status">${pads.length ? 'Controller connected. Its buttons work too.' : 'A real controller works too: plug it in and press a button.'} Any key switches to gamepad mode; a tap or click switches back to touch.</p>`;
+}
+
+SCREENS.single();
+render();
+if (document.fonts) document.fonts.ready.then(fit);
+</script>
+</body>
+</html>

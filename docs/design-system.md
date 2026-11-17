@@ -7,6 +7,12 @@ MiXplorer do, with a better UI and first-class support for Android gaming handhe
 
 > Two halves, one mind: one pane on a phone, two on a handheld.
 
+**Prototype**: [`docs/prototype/index.html`](prototype/index.html) (HEM-3). Open it in a browser. It shows
+the key screens in light, dark and AMOLED, with touch and gamepad focus, and lists the values for each
+screen. Once approved, it is the visual spec for UI tickets (`prototype-fidelity`). Accent colors in it
+are placeholders until HEM-6. The semantic colors (danger, warning, success), file-type colors, scrim
+alphas and line heights in it are provisional too, until the tokens JSON ticket adds them here.
+
 ---
 
 ## 1. Platform and stack
@@ -158,8 +164,8 @@ folder · image · video · audio · archive · APK · ROM/ISO · document · co
 | `title` | 20sp | 500 | Screen and dialog titles |
 | `heading` | 16sp | 500 | Pane headers, section labels |
 | `body` | 14sp | 400 | File names |
-| `meta` | 12sp | 400 | Size, date, counts (tabular numbers) |
-| `caption` | 11sp | 400 | Button hints, badges |
+| `meta` | 12sp | 400 | Size, date, counts (tabular numbers), gamepad button hints |
+| `caption` | 11sp | 400 | Badges, section labels |
 
 - **Inter** (variable, OFL) for all UI, with `tnum` on numbers.
 - **JetBrains Mono** (OFL) only for permissions, hashes, and paths in the editor.
@@ -290,6 +296,105 @@ sort and view sheet · search field + scope chip · settings rows · accent pick
 prompt · storage analyzer chart · app list row
 
 **Focus states**: every interactive component has a defined gamepad focus state.
+
+---
+
+## 14. TalkBack
+
+Every screen works with TalkBack and with a gamepad at the same time. The gamepad and D-pad move input
+focus, and TalkBack follows it. The app never relies on TalkBack swipes to move input focus.
+
+### Labels
+
+| Element | TalkBack reads |
+|---|---|
+| File row | "Pocket Racer Turbo (USA).gba, 8.4 MB, 2 Nov 2026" (full name, never the middle-cut one) |
+| Folder row | "GBA, folder, 24 items" |
+| Selected row | the row label, then "selected" (state, not part of the name) |
+| Icon button | its action: "Search this folder", "Switch to Dual", "More actions", "Leave selection" |
+| Breadcrumb | "Path: Internal storage, Download, ROMs"; each crumb is a button, the last is "current" |
+| Pane | "Left pane, active" / "Right pane" |
+| Tab chip | "ROMs, tab 1 of 2, selected" |
+| Progress chip | "2 operations, 46 percent. Open queue" |
+| Accent swatch | its color name ("Teal"), as a radio button |
+| File-type icon | not read (the type is in the name and the row label) |
+
+- Icon-only buttons always have a content description. Buttons with text use the text.
+- Decorative pieces (dividers, the accent bar, the status bar mock) are hidden from TalkBack.
+- Danger, warning and success are read as words ("Delete", "Finished"), never as colors.
+
+### Focus order
+
+- Single: app bar → breadcrumbs → file list → FAB, or app bar → breadcrumbs → list → action bar while selecting.
+  The clipboard tray comes after the list.
+- Dual: top bar → rail → left pane (tabs → breadcrumbs → list) → right pane. In RTL the panes swap
+  sides and the order follows what is on screen.
+- Sheets and dialogs trap focus until closed. On close, focus goes back to the element that opened them.
+- Opening a folder puts focus on its first row. Going up puts focus on the folder you came from.
+
+### Announcements
+
+| Event | Announcement |
+|---|---|
+| Selection changes | "3 selected, 1.2 GB" |
+| Copy or Cut | "3 items on the clipboard" |
+| Operation starts / ends | "Copying 3 items to ROMs" / "Copied 3 items to ROMs" |
+| Delete | "Moved 1 item to Trash. Undo available" (the snackbar stays while TalkBack is on) |
+| Layout switch | "Dual layout" / "Single layout" |
+| Active pane change | "Right pane, SD card, ROMs" |
+
+Use polite live regions. Progress is announced at start, at end and on error, not on every percent.
+
+---
+
+## 15. Localization and RTL
+
+- All text comes from string resources, with plurals (`3 items`, `1 item`) and no text built by
+  string concatenation.
+- Layout uses start and end, never left and right, so RTL mirrors it: rail on the right, breadcrumb
+  separators point left, back and "Copy → other pane" arrows flip.
+- **Filenames and paths are user data**: they are bidi-isolated (`BidiFormatter` / `TextDirectionHeuristics.FIRSTSTRONG_LTR`),
+  so a Latin filename reads left to right inside an RTL layout and an Arabic one reads right to left
+  inside an LTR layout. Sizes and dates use the locale's number and date format.
+- **Breadcrumbs** run from the root at the start edge. They scroll so the current folder is visible,
+  in both directions.
+- **Middle-cut filenames** keep the end of the name (extension and region tag) and cut the middle,
+  measured in grapheme clusters so emoji and combined letters are never split. In RTL the kept part
+  is still the end of the name in logical order.
+- **L2/R2** move to the next and previous tab in reading order, so in RTL R2 moves left. Tabs are
+  a list, not sides.
+- **L1/R1 hints**: L1 always goes to the pane on the physical left and R1 to the right, because
+  those are physical buttons. The L1 and R1 chips stay one pair in physical order (L1 left of R1) at the
+  end of the footer. In RTL that end is the left side; the rest of the footer mirrors. Pane names
+  that TalkBack reads ("Left pane", "Right pane") are physical too.
+- Strings can grow by 40% (German, Russian) without clipping: buttons and chips grow, rows ellipsize the
+  name, never the size.
+- Test with an RTL pseudo-locale (`ar-XB`) and a long-text pseudo-locale (`en-XA`).
+
+---
+
+## 16. Test devices
+
+"Phone" and "handheld" in every UI check mean these profiles. Sizes are in dp.
+
+| Profile | Window (dp) | Layout | Reference devices | Emulator profile |
+|---|---|---|---|---|
+| Phone | 412 × 915 portrait | Single | Pixel 8 class | Pixel 8 (API 35) |
+| Small phone | 360 × 800 portrait | Single | Budget 6.5" phones | Custom: 1080 × 2400, 480 dpi |
+| Handheld | 960 × 540 landscape | Dual | 1080p handhelds such as Retroid Pocket 5 and AYN Odin 2, at 320 dpi | Custom: 1920 × 1080, 320 dpi, landscape |
+| Small handheld | 640 × 360 landscape | Dual | The same handhelds at 480 dpi, or 720p handhelds at 320 dpi | Custom: 1920 × 1080, 480 dpi, landscape |
+| Handheld portrait | 540 × 960 | Single (below 600dp) | Handheld profile rotated | Handheld profile rotated |
+
+The dp size of a handheld depends on its display density setting, which differs by model and
+firmware: 1920 px at 320 dpi is 960dp, at 480 dpi it is 640dp. Both are 600dp or wider, so both
+are Dual. Read the real value on a device with `adb shell wm size` and `adb shell wm density`, and
+add the device to this table once it is measured.
+
+- Screenshots for a UI ticket: Phone and Handheld, each in light, dark and AMOLED, with touch and
+  with gamepad focus. The small profiles and handheld portrait are checked by hand when a ticket
+  changes layout.
+- Gamepad checks use a real pad or the emulator's D-pad and button keys. The prototype maps a
+  keyboard to the pad (see its notes panel).
 
 ---
 
