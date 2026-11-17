@@ -1,0 +1,43 @@
+# Claude Code: track only shared workflow files
+.claude/*
+!.claude/settings.json
+!.claude/agents/
+!.claude/skills/
+!.claude/hooks/
+.claude/**/*.bak*
+.claude/**/.env*
+.claude/handoff.md
+CLAUDE.local.md
+graphify-out/
+
+# Android / Gradle
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/
+.kotlin/
+*.apk
+*.aab
+
+# Signing and service secrets
+*.keystore
+*.jks
+*.p12
+keystore.properties
+google-services.json
+.env*
+!.env.example
+*.pem
+*.pepk
+service-account*.json
+
+# Python caches (gate and review-loop scripts)
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
