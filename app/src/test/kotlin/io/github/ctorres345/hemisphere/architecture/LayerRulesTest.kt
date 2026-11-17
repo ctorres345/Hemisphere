@@ -94,6 +94,15 @@ class LayerRulesTest {
     }
 
     @Test
+    fun `screen ViewModels come from Hilt, not a hand-written container`() {
+        production.classes().assertFalse(strict = false) { it.name == "AppContainer" }
+        production.files.assertFalse(strict = false) { file ->
+            file.imports.any { it.name in handWiredViewModelImports }
+        }
+        screenViewModels().assertTrue(strict = false) { it.hasAnnotationWithName("HiltViewModel") }
+    }
+
+    @Test
     fun `intent types carry the ViewModel prefix`() {
         production.classesAndInterfaces().assertFalse(strict = false) { it.name == "Intent" }
     }
@@ -109,6 +118,10 @@ class LayerRulesTest {
         }
 
     private companion object {
+        /** Hand wiring, or plain `viewModel()`, which cannot build an `@HiltViewModel` and crashes at runtime. */
+        val handWiredViewModelImports =
+            setOf("androidx.lifecycle.viewmodel.viewModelFactory", "androidx.lifecycle.viewmodel.compose.viewModel")
+
         const val MVI_BASE = "io.github.ctorres345.hemisphere.core.mvi.MviViewModel"
 
         /** A verb, at least one noun word, then UseCase: `GetListingUseCase`, `EnqueueCopyUseCase`. */
