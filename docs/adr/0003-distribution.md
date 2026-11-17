@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # Ship the MVP on GitHub Releases and F-Droid; Google Play comes later

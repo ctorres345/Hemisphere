@@ -1,6 +1,6 @@
 # Code guidelines
 
-Status: **proposed** (HEM-2).
+Status: **accepted** (HEM-2, 2026-11-17).
 
 Each rule says where it comes from: a section of [`architecture.md`](architecture.md) (`arch §n`),
 an ADR, or [`design-system.md`](design-system.md) (`design §n`). The last column says what checks

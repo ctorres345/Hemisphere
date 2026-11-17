@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # The MVP is a complete local file manager with one location per pane

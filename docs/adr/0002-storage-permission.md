@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # All-files access on Android 11+, legacy storage permission on Android 8 to 10

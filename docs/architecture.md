@@ -1,6 +1,6 @@
 # Hemisphere architecture
 
-Status: **proposed** (HEM-2). Becomes accepted when Cesar approves the PR.
+Status: **accepted** (HEM-2, approved by Cesar on 2026-11-17).
 
 This is how the app is built. Read it before the scaffold and before every feature ticket.
 The visual rules live in [`design-system.md`](design-system.md); the code rules that follow from

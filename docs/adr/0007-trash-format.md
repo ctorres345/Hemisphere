@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # Trash uses the freedesktop.org format on each volume; Room is only a cache

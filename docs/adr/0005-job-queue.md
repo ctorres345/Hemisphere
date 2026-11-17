@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # Our own persisted job queue, run by a foreground service, instead of WorkManager

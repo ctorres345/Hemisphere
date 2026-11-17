@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # Apache Commons Compress for zip, 7z and tar; libarchive for reading RAR; no unRAR

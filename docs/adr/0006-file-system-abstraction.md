@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # Everything outside `core:fs` uses `FsPath` and `FileSystemProvider`, never `File` or URIs

@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # No telemetry, no crash-reporting service, and no internet permission in v1
