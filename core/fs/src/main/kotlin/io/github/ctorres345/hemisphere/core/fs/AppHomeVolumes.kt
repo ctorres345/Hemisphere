@@ -17,9 +17,10 @@ import java.nio.file.StandardCopyOption
 val AppHomeVolume = VolumeId("app-home")
 
 /**
- * The walking skeleton's volumes: only the app's own `home` folder under [appFilesDir]. A new
- * home gets a few sample folders and files on the first listing, so there is something to see.
- * Real storage volumes replace this with the storage-access ticket.
+ * The walking skeleton's volumes: only the app's own `home` folder under [appFilesDir]. In debug
+ * builds a new home gets a few sample folders and files on the first listing, so there is
+ * something to see. Release builds never seed ([BuildConfig.SEED_SAMPLES]) and start with an
+ * empty home. Real storage volumes replace this with the storage-access ticket.
  */
 fun appHomeVolumes(
     appFilesDir: File,
@@ -29,12 +30,14 @@ fun appHomeVolumes(
         home = File(appFilesDir, "home"),
         seedMarker = File(appFilesDir, SampleContent.MARKER_NAME),
         ioDispatcher = ioDispatcher,
+        seedSamples = BuildConfig.SEED_SAMPLES,
     )
 
 internal class AppHomeVolumeRepository(
     private val home: File,
     private val seedMarker: File,
     private val ioDispatcher: CoroutineDispatcher,
+    private val seedSamples: Boolean,
 ) : VolumeRepository {
     private val seedLock = Any()
     private var seeded = false
@@ -48,10 +51,21 @@ internal class AppHomeVolumeRepository(
                     .flowOn(ioDispatcher)
         }
 
-    /** Runs on the IO dispatcher. A failed seed is retried on the next listing; it never fails the listing. */
+    /**
+     * Runs on the IO dispatcher. Without samples it only makes sure home exists, so a fresh
+     * release install lists an empty folder instead of an error. A failed seed is retried on the
+     * next listing; it never fails the listing.
+     */
     private fun seedOnce() =
         synchronized(seedLock) {
-            if (!seeded) seeded = SampleContent.seed(home, seedMarker)
+            if (!seeded) {
+                seeded =
+                    if (seedSamples) {
+                        SampleContent.seed(home, seedMarker)
+                    } else {
+                        home.mkdirs() || home.isDirectory
+                    }
+            }
         }
 
     override fun homeFolder(): FsPath = FsPath.root(AppHomeVolume)
