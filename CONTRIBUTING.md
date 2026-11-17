@@ -50,8 +50,14 @@ CI runs [gitleaks](https://github.com/gitleaks/gitleaks) on every PR to catch le
 gitleaks git -v
 ```
 
-Build, test and lint checks join once the Android project exists; this section will list their
-commands then.
+CI also builds the app and runs every test and lint check on every PR. You need JDK 17 (Gradle
+downloads it if it is missing) and the Android SDK with API 36. To run the same checks locally:
+
+```sh
+./gradlew assembleDebug   # build the debug APK
+./gradlew check           # unit tests, architecture rules, Android Lint, ktlint and detekt
+./gradlew ktlintFormat    # fix formatting
+```
 
 ## Sign your commits (DCO)
 

@@ -1,0 +1,5 @@
+# Read by the review gate (review-loop's --mark and CI's run-check).
+# `./gradlew check` runs unit tests, Konsist, Android Lint, ktlint, detekt and the module-graph check.
+[check]
+command = "./gradlew check --console=plain"
+timeout = 1800

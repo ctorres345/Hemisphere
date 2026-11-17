@@ -1,0 +1,14 @@
+# core:designsystem defines the color tokens, so it may call Color(...). The temp-file rules stay.
+# Detekt replaces lists instead of merging them: keep this list in step with detekt.yml.
+style:
+  ForbiddenMethodCall:
+    active: true
+    methods:
+      - value: 'java.io.File.createTempFile'
+        reason: 'Use ScratchSpace for seekable scratch writes (architecture §3).'
+      - value: 'kotlin.io.createTempFile'
+        reason: 'Use ScratchSpace for seekable scratch writes (architecture §3).'
+      - value: 'kotlin.io.path.createTempFile'
+        reason: 'Use ScratchSpace for seekable scratch writes (architecture §3).'
+      - value: 'java.nio.file.Files.createTempFile'
+        reason: 'Use ScratchSpace for seekable scratch writes (architecture §3).'

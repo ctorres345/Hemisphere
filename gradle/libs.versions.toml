@@ -1,0 +1,61 @@
+[versions]
+# Toolchain. CI and local builds use the same JDK through the Gradle daemon JVM criteria
+# (gradle/gradle-daemon-jvm.properties) and the Kotlin toolchain below (ADR 0003: pinned, reproducible).
+jdk = "17"
+agp = "9.5.1"
+kotlin = "2.4.21"
+android-compileSdk = "36"
+android-minSdk = "26"
+android-targetSdk = "36"
+
+androidx-activity = "1.13.0"
+# 1.19+ needs compileSdk 37.
+androidx-core = "1.18.0"
+# 2026.08.00+ (Compose 1.12) needs compileSdk 37; we stay on 36 until the targetSdk bump.
+compose-bom = "2026.06.01"
+
+# Quality
+detekt = "1.23.8"
+# The Kotlin version detekt 1.23.8 was built with; its own classpath must use exactly this.
+detekt-kotlin = "2.0.21"
+ktlint-gradle = "14.2.0"
+ktlint = "1.8.0"
+compose-lints = "1.6.1"
+konsist = "0.18.1"
+
+# Tests
+junit = "4.13.2"
+
+[libraries]
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
+compose-bom = { module = "androidx.compose:compose-bom", version.ref = "compose-bom" }
+compose-material3 = { module = "androidx.compose.material3:material3" }
+compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+
+compose-lints = { module = "com.slack.lint.compose:compose-lint-checks", version.ref = "compose-lints" }
+konsist = { module = "com.lemonappdev:konsist", version.ref = "konsist" }
+junit = { module = "junit:junit", version.ref = "junit" }
+
+# build-logic only
+android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+compose-gradlePlugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
+detekt-gradlePlugin = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
+ktlint-gradlePlugin = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktlint-gradle" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-gradle" }
+
+# Convention plugins (build-logic)
+hemisphere-jvm-library = { id = "hemisphere.jvm.library" }
+hemisphere-android-library = { id = "hemisphere.android.library" }
+hemisphere-android-library-compose = { id = "hemisphere.android.library.compose" }
+hemisphere-android-application = { id = "hemisphere.android.application" }
+hemisphere-module-graph = { id = "hemisphere.module.graph" }
