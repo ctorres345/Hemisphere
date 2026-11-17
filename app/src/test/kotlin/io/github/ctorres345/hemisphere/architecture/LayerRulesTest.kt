@@ -63,12 +63,28 @@ class LayerRulesTest {
 
     @Test
     fun `every screen ViewModel has a reducer test and a ViewModel test`() {
-        val testNames = tests.classes().map { it.name }.toSet()
+        val tested = testClassesWithTests()
         screenViewModels().assertTrue(strict = false) { viewModel ->
             val screen = viewModel.name.removeSuffix("ViewModel")
-            "${screen}ReducerTest" in testNames && "${screen}ViewModelTest" in testNames
+            "${screen}ReducerTest" in tested && "${screen}ViewModelTest" in tested
         }
     }
+
+    @Test
+    fun `every use case has a test`() {
+        val tested = testClassesWithTests()
+        domain.classes().withNameEndingWith("UseCase").assertTrue(strict = false) { useCase ->
+            "${useCase.name}Test" in tested
+        }
+    }
+
+    /** Names of test classes that hold at least one test, so an empty placeholder class does not count. */
+    private fun testClassesWithTests(): Set<String> =
+        tests
+            .classes()
+            .filter { testClass -> testClass.functions().any { it.hasAnnotationWithName("Test") } }
+            .map { it.name }
+            .toSet()
 
     @Test
     fun `tests use fakes, not a mocking library`() {
