@@ -6,6 +6,7 @@ import io.github.ctorres345.hemisphere.core.model.EntryKey
 import io.github.ctorres345.hemisphere.core.model.FsError
 import io.github.ctorres345.hemisphere.core.model.FsPath
 import io.github.ctorres345.hemisphere.core.model.FsResult
+import io.github.ctorres345.hemisphere.core.model.ProviderRef
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
@@ -57,10 +58,14 @@ class InMemoryProvider(
 }
 
 /** A folder entry, for building test listings. */
-fun folder(name: String): Entry = Entry(name, Entry.Kind.Folder)
+fun folder(
+    name: String,
+    ref: ProviderRef? = null,
+): Entry = Entry(name, Entry.Kind.Folder, ref = ref)
 
 /** A file entry, for building test listings. */
 fun file(
     name: String,
     size: Long = 0,
-): Entry = Entry(name, Entry.Kind.File, size = size)
+    ref: ProviderRef? = null,
+): Entry = Entry(name, Entry.Kind.File, size = size, ref = ref)
