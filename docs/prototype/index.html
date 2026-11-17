@@ -65,8 +65,8 @@ button { font: inherit; color: inherit; }
   --danger: #B3261E; --warning: #8A5300; --success: #2E7D4F;
   --ft-folder: #5B6B8C; --ft-image: #2F7D6B; --ft-video: #8A4FA0; --ft-audio: #A0522D; --ft-archive: #8C6A1F;
   --ft-apk: #4F7F2F; --ft-rom: #B03A5B; --ft-doc: #3D6FA3; --ft-code: #5A5F6B; --ft-other: #6E7075;
-  /* provisional accent (blue); JS swaps these per picked accent */
-  --a-fill: #2F5BD3; --a-on: #FFFFFF; --a-text: #2F5BD3; --a-focus: #2F5BD3;
+  /* accent (blue, tokens/color.light.json); JS swaps these per picked accent */
+  --a-fill: #2E5FD6; --a-on: #FFFFFF; --a-text: #2E5FD6; --a-focus: #2E5FD6;
   --a-tint: color-mix(in srgb, var(--a-fill) 12%, var(--raised));
   /* type: section 6 */
   --f-title: 500 20px/28px var(--app-font); --f-heading: 500 16px/22px var(--app-font); --f-body: 400 14px/20px var(--app-font);
@@ -193,6 +193,8 @@ button { font: inherit; color: inherit; }
 .pane:not(.active) .chip:not([aria-selected="true"]) { color: var(--t3); }
 .pane:not(.active) .chip[aria-selected="true"] { background: transparent; border-color: var(--bd); font-weight: 400; }
 .pane:not(.active) .meta, .pane:not(.active) .crumb { color: var(--t3); }
+/* text.tertiary is too faint on accent.tint, so selected rows keep text.secondary meta (design-system.md section 3) */
+.pane:not(.active) .row[aria-selected="true"] .meta { color: var(--t2); }
 .psel { display: flex; align-items: center; gap: var(--s1); height: 40px; padding-inline: var(--s1) var(--s2); background: var(--a-tint); }
 .psel .ttl { font: var(--f-body); font-weight: 500; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
 .psel .btn { height: 32px; padding-inline: var(--s2); font: var(--f-meta); font-weight: 500; border-color: transparent; }
@@ -288,7 +290,7 @@ button { font: inherit; color: inherit; }
 </head>
 <body>
 <header class="ctl" aria-label="Prototype controls">
-  <h1>Hemisphere <small>HEM-3 prototype · provisional accent colors</small></h1>
+  <h1>Hemisphere <small>HEM-3 prototype · accents from HEM-6 tokens</small></h1>
   <div class="grp"><span id="g-screen">Screen</span><div class="seg" role="group" aria-labelledby="g-screen" data-k="screen">
     <button data-v="single">Phone · Single</button><button data-v="dual">Handheld · Dual</button><button data-v="select">Selection + clipboard</button><button data-v="conflict">Conflict sheet</button><button data-v="queue">Queue sheet</button><button data-v="settings">Settings</button></div></div>
   <div class="grp"><span id="g-dev">Device</span><div class="seg" role="group" aria-labelledby="g-dev" data-k="device"><button data-v="phone">Phone</button><button data-v="handheld">Handheld</button></div></div>
@@ -375,12 +377,13 @@ const fmtSize = mb => mb >= 1000 ? (mb / 1000).toFixed(1) + ' GB' : mb >= 1 ? (m
 const sizeOf = (p, names) => ls(p).filter(e => names.includes(e.n)).reduce((a, e) => a + (e.t === 'folder' ? (e.count || 0) * 32 : e.mb || 0), 0);
 const lastSeg = p => p === rootOf(p) ? ROOTS[p] : p.split('/').pop();
 
-/* ---------------- Accents (provisional placeholders, final values in HEM-6) ---------------- */
+/* ---------------- Accents (final values from tokens/color.*.json, HEM-6) ---------------- */
+// [Light fill, Light onFill, Dark/AMOLED fill, Dark/AMOLED onFill]. accent.text and accent.focus equal fill.
 const ACCENTS = {
-  blue: ['#2F5BD3', '#FFFFFF', '#8AA8F8', '#0B1430'], teal: ['#0F766E', '#FFFFFF', '#5CC8BC', '#04201D'],
-  green: ['#2E7D32', '#FFFFFF', '#7CC47F', '#0A2010'], amber: ['#8A5A00', '#FFFFFF', '#E8B54A', '#2A1C00'],
-  orange: ['#B4480F', '#FFFFFF', '#F29A5C', '#2C1200'], red: ['#B42335', '#FFFFFF', '#F28B95', '#2E070C'],
-  pink: ['#A8306E', '#FFFFFF', '#F08CC0', '#2E0A1D'], violet: ['#6941C6', '#FFFFFF', '#B39BF5', '#1A0E3A']
+  blue: ['#2E5FD6', '#FFFFFF', '#80A9FE', '#0C1936'], teal: ['#03736F', '#FFFFFF', '#65BCB7', '#00201E'],
+  green: ['#3A7400', '#FFFFFF', '#87BD68', '#0D2002'], amber: ['#816304', '#FFFFFF', '#C8A752', '#231901'],
+  orange: ['#A94B03', '#FFFFFF', '#EF8E5A', '#301000'], red: ['#BD2D51', '#FFFFFF', '#FB7E91', '#310C13'],
+  pink: ['#B0377B', '#FFFFFF', '#ED82B8', '#2E0D1E'], violet: ['#734ECF', '#FFFFFF', '#AD98FE', '#1C1434']
 };
 
 /* ---------------- State ---------------- */
@@ -848,7 +851,7 @@ const NOTES = {
   queue: ['Queue sheet', 'Copy and move run in the background. The chip in the top bar shows count and percent; tap it for the list.', [
     'Progress: 6dp bar, accent.fill on border.default.', 'Finished jobs show a check icon and the word "Finished" in success.', 'Pause and Cancel are 48dp icon buttons with labels for TalkBack.', 'The system notification mirrors this list (not drawn here).']],
   settings: ['Settings', 'Theme and accent pickers, layout pins and gamepad options.', [
-    'Theme: four chips (System, Light, Dark, AMOLED). The prototype theme follows your pick.', 'Accent: 8 swatches, 36dp circles in 48dp targets, selected one has a check and a 2dp ring. Values are placeholders until HEM-6.', 'Switch: border.strong track when off (meets 3:1), accent.fill when on.', 'Layout pins are saved per device and per orientation.']]
+    'Theme: four chips (System, Light, Dark, AMOLED). The prototype theme follows your pick.', 'Accent: 8 swatches, 36dp circles in 48dp targets, selected one has a check and a 2dp ring. Values come from the HEM-6 tokens.', 'Switch: border.strong track when off (meets 3:1), accent.fill when on.', 'Layout pins are saved per device and per orientation.']]
 };
 function notes() {
   const n = NOTES[S.screen] || NOTES.single;

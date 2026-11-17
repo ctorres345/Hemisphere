@@ -1,0 +1,42 @@
+name: tokens
+
+# Checks the color tokens for contrast (HEM-6, docs/design-system.md section 11): all 24 theme x accent
+# combinations against WCAG AA. Runs only when the tokens or the check change, so it is not a required
+# check (a required job that skips would block unrelated PRs).
+on:
+  pull_request:
+    paths:
+      - "tokens/**"
+      - "tools/contrast/**"
+      - ".github/workflows/tokens.yml"
+  push:
+    branches: [main, mvp]
+    paths:
+      - "tokens/**"
+      - "tools/contrast/**"
+      - ".github/workflows/tokens.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tokens-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  contrast:
+    name: contrast-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The runner's own Python 3; the check uses only the standard library.
+      - name: Test the contrast check
+        run: python3 -m unittest discover -s tools/contrast -v
+
+      - name: Check all 24 theme x accent combinations
+        run: python3 tools/contrast/check_contrast.py

@@ -1,0 +1,196 @@
+{
+  "$description": "Dark theme. Default when the system is dark. Source of truth for docs/design-system.md section 5. Checked by tools/contrast.",
+  "color": {
+    "$type": "color",
+    "surface": {
+      "canvas": {
+        "$value": "#111214"
+      },
+      "raised": {
+        "$value": "#18191C"
+      },
+      "overlay": {
+        "$value": "#202226"
+      }
+    },
+    "border": {
+      "default": {
+        "$value": "#26282C",
+        "$description": "Decorative only: row dividers, pane split."
+      },
+      "strong": {
+        "$value": "#6C6E73",
+        "$description": "Boundaries that are the only way to see a control. At least 3:1 on every surface."
+      }
+    },
+    "text": {
+      "primary": {
+        "$value": "#E9E9EB"
+      },
+      "secondary": {
+        "$value": "#A3A5AA"
+      },
+      "tertiary": {
+        "$value": "#898B90",
+        "$description": "Inactive pane step-down of text.secondary. Not used on accent.tint."
+      }
+    },
+    "semantic": {
+      "danger": {
+        "$value": "#F2827A"
+      },
+      "warning": {
+        "$value": "#E5A440"
+      },
+      "success": {
+        "$value": "#6CC18F"
+      }
+    },
+    "accent": {
+      "blue": {
+        "fill": {
+          "$value": "#80A9FE"
+        },
+        "onFill": {
+          "$value": "#0C1936"
+        },
+        "tint": {
+          "$value": "#2B3345",
+          "$description": "accent.fill mixed 18% into surface.raised (sRGB)."
+        },
+        "focus": {
+          "$value": "#80A9FE"
+        },
+        "text": {
+          "$value": "#80A9FE"
+        }
+      },
+      "teal": {
+        "fill": {
+          "$value": "#65BCB7"
+        },
+        "onFill": {
+          "$value": "#00201E"
+        },
+        "tint": {
+          "$value": "#263638",
+          "$description": "accent.fill mixed 18% into surface.raised (sRGB)."
+        },
+        "focus": {
+          "$value": "#65BCB7"
+        },
+        "text": {
+          "$value": "#65BCB7"
+        }
+      },
+      "green": {
+        "fill": {
+          "$value": "#87BD68"
+        },
+        "onFill": {
+          "$value": "#0D2002"
+        },
+        "tint": {
+          "$value": "#2C372A",
+          "$description": "accent.fill mixed 18% into surface.raised (sRGB)."
+        },
+        "focus": {
+          "$value": "#87BD68"
+        },
+        "text": {
+          "$value": "#87BD68"
+        }
+      },
+      "amber": {
+        "fill": {
+          "$value": "#C8A752"
+        },
+        "onFill": {
+          "$value": "#231901"
+        },
+        "tint": {
+          "$value": "#383326",
+          "$description": "accent.fill mixed 18% into surface.raised (sRGB)."
+        },
+        "focus": {
+          "$value": "#C8A752"
+        },
+        "text": {
+          "$value": "#C8A752"
+        }
+      },
+      "orange": {
+        "fill": {
+          "$value": "#EF8E5A"
+        },
+        "onFill": {
+          "$value": "#301000"
+        },
+        "tint": {
+          "$value": "#3F2E27",
+          "$description": "accent.fill mixed 18% into surface.raised (sRGB)."
+        },
+        "focus": {
+          "$value": "#EF8E5A"
+        },
+        "text": {
+          "$value": "#EF8E5A"
+        }
+      },
+      "red": {
+        "fill": {
+          "$value": "#FB7E91"
+        },
+        "onFill": {
+          "$value": "#310C13"
+        },
+        "tint": {
+          "$value": "#412B31",
+          "$description": "accent.fill mixed 18% into surface.raised (sRGB)."
+        },
+        "focus": {
+          "$value": "#FB7E91"
+        },
+        "text": {
+          "$value": "#FB7E91"
+        }
+      },
+      "pink": {
+        "fill": {
+          "$value": "#ED82B8"
+        },
+        "onFill": {
+          "$value": "#2E0D1E"
+        },
+        "tint": {
+          "$value": "#3E2C38",
+          "$description": "accent.fill mixed 18% into surface.raised (sRGB)."
+        },
+        "focus": {
+          "$value": "#ED82B8"
+        },
+        "text": {
+          "$value": "#ED82B8"
+        }
+      },
+      "violet": {
+        "fill": {
+          "$value": "#AD98FE"
+        },
+        "onFill": {
+          "$value": "#1C1434"
+        },
+        "tint": {
+          "$value": "#333045",
+          "$description": "accent.fill mixed 18% into surface.raised (sRGB)."
+        },
+        "focus": {
+          "$value": "#AD98FE"
+        },
+        "text": {
+          "$value": "#AD98FE"
+        }
+      }
+    }
+  }
+}

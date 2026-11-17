@@ -9,9 +9,13 @@ MiXplorer do, with a better UI and first-class support for Android gaming handhe
 
 **Prototype**: [`docs/prototype/index.html`](prototype/index.html) (HEM-3). Open it in a browser. It shows
 the key screens in light, dark and AMOLED, with touch and gamepad focus, and lists the values for each
-screen. Once approved, it is the visual spec for UI tickets (`prototype-fidelity`). Accent colors in it
-are placeholders until HEM-6. The semantic colors (danger, warning, success), file-type colors, scrim
-alphas and line heights in it are provisional too, until the tokens JSON ticket adds them here.
+screen. Once approved, it is the visual spec for UI tickets (`prototype-fidelity`). Its surface, text,
+border, semantic and accent colors match the token files in [`tokens/`](../tokens/) (HEM-6). File-type
+colors and scrim alphas in it are still provisional.
+
+**Tokens**: [`tokens/`](../tokens/) is the source of truth for every color, spacing, shape and type value
+in sections 5 to 7 (W3C Design Tokens format). Where this document and a token file differ, the token
+file wins. `tools/contrast/check_contrast.py` checks every theme × accent combination in CI.
 
 ---
 
@@ -83,7 +87,9 @@ Auto is a heuristic: a known-device table keyed by `InputDevice` vendor/product 
 - **Focus ring**: always visible in gamepad mode, in every theme × accent combination.
 - **Active pane**: an accent bar at the top of the pane header. The inactive pane steps its text
   down one token (`text.primary` → `text.secondary`, `text.secondary` → `text.tertiary`) instead
-  of using opacity, and those pairs are in the contrast matrix.
+  of using opacity, and those pairs are in the contrast matrix. On a selected row (`accent.tint`)
+  the inactive pane steps only the name down; size and date stay `text.secondary`, because
+  `text.tertiary` is too faint on the tint (under 4:1 in Dark and AMOLED).
 - **Button-hint footer**: `Ⓐ Open  Ⓑ Back  Ⓧ Menu  Ⓨ Mark  L1/R1 Pane`. Ⓨ is labeled "Mark" so it can't
   be confused with the physical Select button (layout mode).
 
@@ -122,7 +128,8 @@ remove anything that looks generated.
 | `text.tertiary` | `#6E7075` | `#898B90` | `#7E8085` |
 | `border.strong` | `#8A8C91` | `#6C6E73` | `#626469` |
 
-Values are provisional and must pass the contrast check in CI (section 11).
+The values come from `tokens/color.light.json`, `tokens/color.dark.json` and
+`tokens/color.amoled.json`, and pass the contrast check in CI (section 11).
 
 - `border.default` is decorative only (row dividers, pane split). Anything whose boundary is the
   only way to see it (text fields, checkboxes, toggles) uses `border.strong` at ≥ 3:1 against its
@@ -134,6 +141,32 @@ Values are provisional and must pass the contrast check in CI (section 11).
 - Each accent defines `accent.fill`, `accent.onFill`, `accent.tint`, `accent.focus`, and `accent.text`
   for all three themes.
 - 3 themes × 8 accents = **24 combinations**, all checked for contrast in CI.
+
+| Role | Use | Contrast rule |
+|---|---|---|
+| `accent.fill` | FAB, primary button, switch on, progress, active-pane bar | ≥ 3:1 on every surface |
+| `accent.onFill` | Text and icons on `accent.fill` | ≥ 4.5:1 on `accent.fill` |
+| `accent.tint` | Selected rows and chips: `accent.fill` mixed into `surface.raised` (12% Light, 18% Dark, 20% AMOLED) | `text.primary` and `text.secondary` ≥ 4.5:1 on it |
+| `accent.focus` | Gamepad focus ring | ≥ 3:1 on every surface and on `accent.tint` |
+| `accent.text` | Accent-colored text and links | ≥ 4.5:1 on every surface and on `accent.tint` |
+
+All 8 accents have the same perceived brightness (OKLCH lightness) within a theme, so none looks
+heavier than the others. Red, amber and green sit a little away from `danger`, `warning` and `success`
+in hue. `accent.focus` and `accent.text` equal `accent.fill` for every accent today.
+
+Final `accent.fill` values (HEM-6). `accent.onFill` is `#FFFFFF` in Light and a dark shade of the
+same hue in Dark and AMOLED; the token files hold every role.
+
+| Accent | Light | Dark and AMOLED |
+|---|---|---|
+| blue | `#2E5FD6` | `#80A9FE` |
+| teal | `#03736F` | `#65BCB7` |
+| green | `#3A7400` | `#87BD68` |
+| amber | `#816304` | `#C8A752` |
+| orange | `#A94B03` | `#EF8E5A` |
+| red | `#BD2D51` | `#FB7E91` |
+| pink | `#B0377B` | `#ED82B8` |
+| violet | `#734ECF` | `#AD98FE` |
 - **Material You** (wallpaper color) is an optional toggle, off by default, available on Android 12+
   (API 31) and hidden below. Its color is checked at runtime, and if it fails contrast the nearest
   curated accent is used instead.
@@ -141,11 +174,13 @@ Values are provisional and must pass the contrast check in CI (section 11).
 
 ### Semantic colors (independent of the accent)
 
-| Role | Use |
-|---|---|
-| `danger` | Permanent delete, errors |
-| `warning` | Low storage, root warnings |
-| `success` | Operation finished |
+| Role | Use | Light | Dark and AMOLED |
+|---|---|---|---|
+| `danger` | Permanent delete, errors | `#B3261E` | `#F2827A` |
+| `warning` | Low storage, root warnings | `#8A5300` | `#E5A440` |
+| `success` | Operation finished | `#2E7D4F` | `#6CC18F` |
+
+Each is ≥ 4.5:1 on every surface, since it also colors the label text.
 
 Semantic states never rely on color alone: they always carry an icon and a text label. Selection
 always shows a check mark. So a red, green, or amber accent can't be mistaken for danger, success,
@@ -263,6 +298,12 @@ tokens/*.json  (W3C Design Tokens format)
       ├──► CI contrast check: 24 theme × accent combinations (WCAG AA; focus ring ≥ 3:1)
       └──► docs site on GitHub Pages
 ```
+
+The contrast check is `tools/contrast/check_contrast.py` (Python standard library). Run it with
+`python3 tools/contrast/check_contrast.py`; its tests run with
+`python3 -m unittest discover -s tools/contrast`. The `tokens` workflow runs both on PRs that touch
+`tokens/` or `tools/contrast/`. It exits 1 when a pair fails and 2 when a token is missing or not a
+`#RRGGBB` color.
 
 No Figma for now. Throwaway HTML mockups are fine for exploring.
 
@@ -405,4 +446,3 @@ add the device to this table once it is measured.
   name is **Hemisphere Explorer** (in-app and icon: "Hemisphere") and the package ID is `io.github.ctorres345.hemisphere`. Do a
   USPTO/EUIPO search before the first public release on any channel (ADR 0003).
 - Mascot and icon: two half-circles with Via the cat curled between them.
-- Final hex values for the 8 accents, after the contrast script exists.
