@@ -1,0 +1,61 @@
+name: gitleaks
+
+on:
+  pull_request:
+  push:
+    branches: [main, mvp]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gitleaks-${{ github.ref }}
+  # Cancel stale PR runs only: a cancelled push run would leave that push's range unscanned.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  GITLEAKS_VERSION: 8.30.1
+  GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+
+jobs:
+  gitleaks:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install gitleaks
+        run: |
+          tarball="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSLo "$RUNNER_TEMP/$tarball" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/$tarball"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/$tarball" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/$tarball" -C "$RUNNER_TEMP" gitleaks
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+
+      # A PR scans every commit it adds (no 30-commit cap); a push scans the pushed range;
+      # a manual run scans the whole history.
+      - name: Scan
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.event.after }}
+        run: |
+          zero=0000000000000000000000000000000000000000
+          case "$EVENT" in
+            pull_request) range="$PR_BASE..$PR_HEAD" ;;
+            push) if [ "$PUSH_BEFORE" = "$zero" ]; then range=""; else range="$PUSH_BEFORE..$PUSH_AFTER"; fi ;;
+            *) range="" ;;
+          esac
+          if [ -n "$range" ]; then
+            gitleaks git --no-banner --redact -v --log-opts="$range" .
+          else
+            gitleaks git --no-banner --redact -v .
+          fi
