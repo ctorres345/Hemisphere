@@ -12,10 +12,10 @@ anything a linter can check is left to the linter and listed only once here.
 | Rule | From | Checked by |
 | --- | --- | --- |
 | A `feature:*` module never depends on another `feature:*` module. | arch §2 | Gradle module graph (scaffold adds a check task) |
-| `core:domain`, `core:fs`, `core:jobs` and `core:data` have no Compose dependency. | arch §2 | Module-graph check task (scaffold) |
+| `core:domain`, `core:fs`, `core:jobs`, `core:data` and `core:mvi` have no Compose dependency. | arch §2 | Module-graph check task (scaffold) |
 | Outside `core:fs`, no `java.io.File`, `java.nio.file.Path`, path strings or `content://` URIs. Use `FsPath`. The only exception is passing `ShareUriProvider.shareableUri` straight into an `Intent`. | ADR 0006 | Detekt `ForbiddenImport` for the types; review for strings and URIs |
 | Check `provider.capabilities`, never the provider's type (`is SafProvider`). | arch §3 | Review |
-| A `feature:*` module depends only on `core:domain`, `core:designsystem`, `core:input` and `core:platform`. `core:domain` exposes only `core:model` as `api`. | arch §2 | Module-graph check task (scaffold) |
+| A `feature:*` module depends only on `core:domain`, `core:designsystem`, `core:input`, `core:mvi` and `core:platform`. `core:domain` exposes only `core:model` as `api`. | arch §2 | Module-graph check task (scaffold) |
 | `core:domain` code imports nothing from `android.*` or Compose. | arch §2 | Konsist test |
 | Each data-layer module (`core:fs`, `core:jobs`, `core:data`) exposes interfaces; its implementations are `internal`. | arch §9 | Review |
 
@@ -34,6 +34,7 @@ anything a linter can check is left to the linter and listed only once here.
 | --- | --- | --- |
 | Each ViewModel has one immutable `XxxUiState`, one top-level sealed `XxxIntent`, one top-level sealed `XxxResult` and one pure `reduce(state, result)`; sub-parts (`PaneResult`) are nested inside them. | arch §6 | Konsist test, review |
 | Input reaches a ViewModel only through `onIntent(intent)`; a ViewModel has no other public function. | arch §6 | Konsist test |
+| Every screen ViewModel extends `MviViewModel` (`core:mvi`) and changes state only through its `emit`. New screens start from [`templates/screen.md`](templates/screen.md). | arch §6 | Konsist test, review |
 | State changes only in `reduce`. It does no I/O, starts no coroutines, calls no use case and reads no clock. | arch §6 | Review, reducer tests |
 | State is a private `MutableStateFlow` whose only write is `update { reduce(it, result) }`, exposed with `asStateFlow()` and collected with `collectAsStateWithLifecycle`. | arch §6 | Review |
 | State that must survive process death is saved through `SavedStateHandle.setSavedStateProvider`, never written by the reducer. Listings and selection are not saved. | arch §6 | Review |

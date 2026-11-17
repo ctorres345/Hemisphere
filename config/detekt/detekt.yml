@@ -33,6 +33,9 @@ style:
         reason: 'Use ScratchSpace for seekable scratch writes (architecture §3).'
       - value: 'java.nio.file.Files.createTempFile'
         reason: 'Use ScratchSpace for seekable scratch writes (architecture §3).'
+  # Compose previews are private and only the IDE calls them.
+  UnusedPrivateMember:
+    ignoreAnnotated: ['Preview']
   MagicNumber:
     ignorePropertyDeclaration: true
     ignoreCompanionObjectPropertyDeclaration: true

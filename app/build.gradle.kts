@@ -11,6 +11,7 @@ dependencies {
     implementation(project(":core:fs"))
     implementation(project(":core:jobs"))
     implementation(project(":core:data"))
+    implementation(project(":core:mvi"))
     implementation(project(":feature:browser"))
     implementation(project(":feature:jobs"))
     implementation(project(":feature:settings"))
@@ -18,6 +19,8 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.compose.material3)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.kotlinx.coroutines.core)
     testImplementation(project(":core:testing"))
     testImplementation(libs.konsist)
 }

@@ -4,35 +4,27 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.ctorres345.hemisphere.core.designsystem.HemisphereTheme
+import io.github.ctorres345.hemisphere.feature.browser.BrowserRoute
+import io.github.ctorres345.hemisphere.feature.browser.BrowserViewModel
 
-/** The only Activity. Shows a placeholder until the Browser screen lands. */
+/** The only Activity. Shows the Browser screen; Navigation 3 adds the other screens later. */
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        val container = (application as HemisphereApplication).container
+        val browserFactory =
+            viewModelFactory {
+                initializer { BrowserViewModel(container.getHomeFolder, container.observeFolder) }
+            }
         setContent {
             HemisphereTheme {
-                PlaceholderScreen()
+                BrowserRoute(viewModel = viewModel(factory = browserFactory))
             }
-        }
-    }
-}
-
-@Composable
-private fun PlaceholderScreen(modifier: Modifier = Modifier) {
-    Surface(modifier = modifier.fillMaxSize()) {
-        Box(modifier = Modifier.safeDrawingPadding(), contentAlignment = Alignment.Center) {
-            Text(text = stringResource(R.string.app_name))
         }
     }
 }

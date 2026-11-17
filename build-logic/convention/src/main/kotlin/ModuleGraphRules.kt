@@ -6,7 +6,8 @@ internal object ModuleGraphRules {
     private const val MODEL = ":core:model"
     private const val TESTING = ":core:testing"
     private val dataLayer = setOf(":core:fs", ":core:jobs", ":core:data")
-    private val featureDeps = setOf(":core:domain", ":core:designsystem", ":core:input", ":core:platform")
+    private const val MVI = ":core:mvi"
+    private val featureDeps = setOf(":core:domain", ":core:designsystem", ":core:input", ":core:platform", MVI)
 
     /** Module path to the modules its production code may depend on. `null` means any module (`app`). */
     val allowed: Map<String, Set<String>?> =
@@ -16,6 +17,7 @@ internal object ModuleGraphRules {
             ":core:designsystem" to emptySet(),
             ":core:input" to setOf(MODEL, ":core:designsystem", ":core:data"),
             ":core:platform" to setOf(MODEL),
+            MVI to emptySet(),
             ":core:domain" to setOf(MODEL) + dataLayer,
             ":core:fs" to setOf(MODEL, ":core:platform"),
             ":core:jobs" to setOf(MODEL, ":core:fs", ":core:data"),
@@ -28,7 +30,7 @@ internal object ModuleGraphRules {
         )
 
     /** Modules that must stay free of Compose (architecture §2) and are tested on the JVM. */
-    val noCompose = setOf(MODEL, ":core:domain") + dataLayer
+    val noCompose = setOf(MODEL, ":core:domain", MVI) + dataLayer
 
     /** `core:domain` exposes only `core:model` as `api`, so the data layer stays off a feature's classpath. */
     private val apiOnly = mapOf(":core:domain" to setOf(MODEL))

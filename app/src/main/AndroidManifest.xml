@@ -5,6 +5,7 @@
     <!-- Backup stays off until the persistence ticket adds the allowlist rules in
          docs/architecture.md §8 (dataExtractionRules and fullBackupContent). -->
     <application
+        android:name=".HemisphereApplication"
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"

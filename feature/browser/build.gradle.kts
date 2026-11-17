@@ -7,5 +7,8 @@ dependencies {
     implementation(project(":core:designsystem"))
     implementation(project(":core:input"))
     implementation(project(":core:platform"))
+    implementation(project(":core:mvi"))
+    implementation(libs.compose.material3)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     testImplementation(project(":core:testing"))
 }

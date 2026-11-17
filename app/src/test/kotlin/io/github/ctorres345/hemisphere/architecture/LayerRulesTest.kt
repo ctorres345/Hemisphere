@@ -14,6 +14,7 @@ class LayerRulesTest {
     private val production = Konsist.scopeFromProduction()
     private val domain = production.slice { "/core/domain/src/main/" in it.path }
     private val features = production.slice { "/feature/" in it.path }
+    private val tests = Konsist.scopeFromTest()
 
     @Test
     fun `core domain imports nothing from android or Compose`() {
@@ -35,7 +36,8 @@ class LayerRulesTest {
 
     @Test
     fun `a ViewModel takes only use cases, SavedStateHandle and assisted values`() {
-        production.classes().withNameEndingWith("ViewModel").assertTrue(strict = false) { viewModel ->
+        // The abstract MviViewModel base takes the initial state and reducer from its subclasses.
+        screenViewModels().assertTrue(strict = false) { viewModel ->
             viewModel.primaryConstructor?.parameters.orEmpty().all { parameter ->
                 parameter.type.name.endsWith("UseCase") ||
                     parameter.type.name == "SavedStateHandle" ||
@@ -52,6 +54,46 @@ class LayerRulesTest {
     }
 
     @Test
+    fun `every screen ViewModel extends the shared MviViewModel base`() {
+        screenViewModels().assertTrue(strict = false) { viewModel ->
+            viewModel.parents().any { it.name.substringBefore('<').trim() == "MviViewModel" } &&
+                viewModel.containingFile.imports.any { it.name == MVI_BASE }
+        }
+    }
+
+    @Test
+    fun `every screen ViewModel has a reducer test and a ViewModel test`() {
+        val tested = testClassesWithTests()
+        screenViewModels().assertTrue(strict = false) { viewModel ->
+            val screen = viewModel.name.removeSuffix("ViewModel")
+            "${screen}ReducerTest" in tested && "${screen}ViewModelTest" in tested
+        }
+    }
+
+    @Test
+    fun `every use case has a test`() {
+        val tested = testClassesWithTests()
+        domain.classes().withNameEndingWith("UseCase").assertTrue(strict = false) { useCase ->
+            "${useCase.name}Test" in tested
+        }
+    }
+
+    /** Names of test classes that hold at least one test, so an empty placeholder class does not count. */
+    private fun testClassesWithTests(): Set<String> =
+        tests
+            .classes()
+            .filter { testClass -> testClass.functions().any { it.hasAnnotationWithName("Test") } }
+            .map { it.name }
+            .toSet()
+
+    @Test
+    fun `tests use fakes, not a mocking library`() {
+        tests.files.assertFalse(strict = false) { file ->
+            file.imports.any { it.name.startsWith("io.mockk") || it.name.startsWith("org.mockito") }
+        }
+    }
+
+    @Test
     fun `intent types carry the ViewModel prefix`() {
         production.classesAndInterfaces().assertFalse(strict = false) { it.name == "Intent" }
     }
@@ -61,7 +103,14 @@ class LayerRulesTest {
         features.files.assertFalse(strict = false) { it.text.contains("KEYCODE_BUTTON_") }
     }
 
+    private fun screenViewModels() =
+        production.classes().withNameEndingWith("ViewModel").filterNot {
+            it.hasAbstractModifier
+        }
+
     private companion object {
+        const val MVI_BASE = "io.github.ctorres345.hemisphere.core.mvi.MviViewModel"
+
         /** A verb, at least one noun word, then UseCase: `GetListingUseCase`, `EnqueueCopyUseCase`. */
         val useCaseName = Regex("""[A-Z][a-z]+(?:[A-Z][a-z0-9]*)+UseCase""")
     }

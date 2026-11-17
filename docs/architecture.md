@@ -43,7 +43,7 @@ Three layers, as in Google's guide to app architecture: UI, domain and data. Eac
         ▼              ▼               ▼                ▼
  feature:browser  feature:jobs  feature:settings  feature:trash     UI layer
         └──────────────┴───────┬───────┴────────────────┘           (screens, ViewModels)
-                               │  (features also use core:designsystem, core:input,
+                               │  (features also use core:designsystem, core:input, core:mvi,
                                ▼   core:platform; simplified, the table below is authoritative)
                          ┌───────────┐
                          │core:domain│                              Domain layer
@@ -63,15 +63,16 @@ Three layers, as in Google's guide to app architecture: UI, domain and data. Eac
 | `core:designsystem` | Tokens generated from `tokens/*.json`, `HemisphereTheme`, shared components, the focus ring, `InputMode` and `LocalInputMode`, button-hint glyphs | nothing in the app |
 | `core:input` | Last-input tracking (touch or gamepad), the gamepad map, Face buttons setting, key and axis handling. It sets the value of `LocalInputMode`. | `core:designsystem`, `core:data` |
 | `core:platform` | Small Android-side interfaces a screen needs directly: `ShareUriProvider` (section 3) | `core:model` |
+| `core:mvi` | The shared strict-MVI base (section 6.1): `MviViewModel` and the `Reducer` type. No Compose. | nothing in the app |
 | `core:domain` | Use cases (section 6.2) and the domain models that combine data from several sources, such as a folder listing with its saved sort | `core:model` (`api`); `core:fs`, `core:jobs`, `core:data` (`implementation`) |
 | `core:fs` | The file-system abstraction (section 3), volumes, the local and SAF providers, MediaStore scans; implements `ShareUriProvider` | `core:model`, `core:platform` |
 | `core:jobs` | The job queue (section 4), conflicts, Trash (section 5), and the `state.db` Room database that stores them | `core:fs`, `core:data` |
 | `core:data` | The `user.db` Room database, DataStore settings, their repositories, the `VolumeStore` implementation | `core:fs` |
 | `core:testing` | Test fakes for every data-layer interface (`InMemoryProvider`, `FakeJobQueue`, fake repositories), used by test source sets only | `core:fs`, `core:jobs`, `core:data` |
-| `feature:browser` | The Browser screen: shell (Single and Dual), panes, file list, selection, clipboard tray | `core:domain`, `core:designsystem`, `core:input`, `core:platform` |
-| `feature:jobs` | Progress chip, queue sheet, conflict sheet. `app` shows them above every screen (Browser, Trash, Settings), so a conflict can be answered from anywhere. | `core:domain`, `core:designsystem`, `core:input` |
-| `feature:settings` | Settings screens (theme, accent, layout pin, Face buttons, Trash retention) | `core:domain`, `core:designsystem`, `core:input` |
-| `feature:trash` | The Trash screen: list, restore, empty | `core:domain`, `core:designsystem`, `core:input` |
+| `feature:browser` | The Browser screen: shell (Single and Dual), panes, file list, selection, clipboard tray | `core:domain`, `core:designsystem`, `core:input`, `core:platform`, `core:mvi` |
+| `feature:jobs` | Progress chip, queue sheet, conflict sheet. `app` shows them above every screen (Browser, Trash, Settings), so a conflict can be answered from anywhere. | `core:domain`, `core:designsystem`, `core:input`, `core:mvi` |
+| `feature:settings` | Settings screens (theme, accent, layout pin, Face buttons, Trash retention) | `core:domain`, `core:designsystem`, `core:input`, `core:mvi` |
+| `feature:trash` | The Trash screen: list, restore, empty | `core:domain`, `core:designsystem`, `core:input`, `core:mvi` |
 
 Rules:
 
@@ -80,7 +81,7 @@ Rules:
 - A `feature:*` module never depends on another `feature:*` module. Features talk through
   `app` (navigation keys) or through a `core:*` module.
 - `core:*` modules never depend on `feature:*`.
-- A `feature:*` module depends on `core:domain`, `core:designsystem`, `core:input` and (for
+- A `feature:*` module depends on `core:domain`, `core:designsystem`, `core:input`, `core:mvi` and (for
   sharing) `core:platform`, never on `core:fs`, `core:jobs` or `core:data`. `core:domain` takes
   the data modules as `implementation` and exposes only `core:model` as `api`, so providers, the
   `JobQueue` and repositories are not reached through `core:domain`. A build file could still
@@ -90,7 +91,7 @@ Rules:
 - Feature tests may use `core:testing` (`testImplementation`). It declares `core:fs`,
   `core:jobs` and `core:data` as `api`, so test code (and only test code) gets the fakes and the
   data interfaces needed to build real use cases over them.
-- `core:domain`, `core:fs`, `core:jobs` and `core:data` have no Compose dependency. They are
+- `core:domain`, `core:fs`, `core:jobs`, `core:data` and `core:mvi` have no Compose dependency. They are
   tested on the JVM. `core:domain` is an Android library module (its dependencies are), but its
   own code imports nothing from `android.*`.
 - `core:input` is UI infrastructure, not a screen: it may read the Face buttons setting from
@@ -501,6 +502,9 @@ Each ViewModel has four types, in one package, named after it (`Browser*` for
   It does not change state itself.
 - **The reducer** is the only place state changes. It is pure: no I/O, no coroutines, no use
   cases, no clock or random values. Anything like that is read before and passed in the result.
+- **The base class**: every screen ViewModel extends `MviViewModel` from `core:mvi`, which holds
+  the state flow and the only write to it (`emit(result)`). How to add a screen:
+  [`templates/screen.md`](templates/screen.md).
 - **State** lives in a private `MutableStateFlow(initial)`. Its only write is
   `state.update { reduce(it, result) }`, and it is exposed with `asStateFlow()`. It lives as
   long as the ViewModel, so marks and selection survive the app going to the background. The UI
@@ -558,6 +562,8 @@ Rules:
   file; a ViewModel that reaches past the domain layer costs a rule that is not tested in one
   place.
 - A use case may call other use cases. It never depends on a ViewModel or on Android UI types.
+- **Packages by area**: `core.domain.files`, `core.domain.jobs`, `core.domain.trash`,
+  `core.domain.settings`. Use cases stay in one module because features share them (ADR 0009).
 
 ## 7. Navigation
 
