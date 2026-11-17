@@ -1,0 +1,180 @@
+{
+  "$description": "Theme-independent tokens from docs/design-system.md sections 6 and 7. A px value here means sp for typography (fontSize, lineHeight) and dp for everything else.",
+  "space": {
+    "$type": "dimension",
+    "xs": {
+      "$value": {
+        "value": 4,
+        "unit": "px"
+      }
+    },
+    "s": {
+      "$value": {
+        "value": 8,
+        "unit": "px"
+      }
+    },
+    "m": {
+      "$value": {
+        "value": 12,
+        "unit": "px"
+      }
+    },
+    "l": {
+      "$value": {
+        "value": 16,
+        "unit": "px"
+      }
+    },
+    "xl": {
+      "$value": {
+        "value": 24,
+        "unit": "px"
+      }
+    },
+    "xxl": {
+      "$value": {
+        "value": 32,
+        "unit": "px"
+      }
+    },
+    "$description": "4dp grid. px here means dp on Android."
+  },
+  "radius": {
+    "$type": "dimension",
+    "chip": {
+      "$value": {
+        "value": 4,
+        "unit": "px"
+      },
+      "$description": "Chips, badges"
+    },
+    "row": {
+      "$value": {
+        "value": 8,
+        "unit": "px"
+      },
+      "$description": "Focused rows, inputs"
+    },
+    "sheet": {
+      "$value": {
+        "value": 12,
+        "unit": "px"
+      },
+      "$description": "Sheets, dialogs"
+    }
+  },
+  "font": {
+    "family": {
+      "$type": "fontFamily",
+      "ui": {
+        "$value": [
+          "Inter",
+          "Roboto",
+          "sans-serif"
+        ]
+      },
+      "mono": {
+        "$value": [
+          "JetBrains Mono",
+          "monospace"
+        ],
+        "$description": "Permissions, hashes and editor paths only."
+      }
+    },
+    "weight": {
+      "$type": "fontWeight",
+      "regular": {
+        "$value": 400
+      },
+      "medium": {
+        "$value": 500
+      }
+    }
+  },
+  "typography": {
+    "$type": "typography",
+    "title": {
+      "$value": {
+        "fontFamily": "{font.family.ui}",
+        "fontSize": {
+          "value": 20,
+          "unit": "px"
+        },
+        "fontWeight": "{font.weight.medium}",
+        "lineHeight": 1.4
+      },
+      "$description": "Screen and dialog titles"
+    },
+    "heading": {
+      "$value": {
+        "fontFamily": "{font.family.ui}",
+        "fontSize": {
+          "value": 16,
+          "unit": "px"
+        },
+        "fontWeight": "{font.weight.medium}",
+        "lineHeight": 1.375
+      },
+      "$description": "Pane headers, section labels"
+    },
+    "body": {
+      "$value": {
+        "fontFamily": "{font.family.ui}",
+        "fontSize": {
+          "value": 14,
+          "unit": "px"
+        },
+        "fontWeight": "{font.weight.regular}",
+        "lineHeight": 1.4285714285714286
+      },
+      "$description": "File names"
+    },
+    "meta": {
+      "$value": {
+        "fontFamily": "{font.family.ui}",
+        "fontSize": {
+          "value": 12,
+          "unit": "px"
+        },
+        "fontWeight": "{font.weight.regular}",
+        "lineHeight": 1.3333333333333333
+      },
+      "$description": "Size, date, counts (tabular numbers), button hints"
+    },
+    "caption": {
+      "$value": {
+        "fontFamily": "{font.family.ui}",
+        "fontSize": {
+          "value": 11,
+          "unit": "px"
+        },
+        "fontWeight": "{font.weight.regular}",
+        "lineHeight": 1.2727272727272727
+      },
+      "$description": "Badges, section labels"
+    },
+    "$description": "Font sizes in px here mean sp on Android, so they follow the system font size."
+  },
+  "row": {
+    "$type": "dimension",
+    "comfortable": {
+      "$value": {
+        "value": 56,
+        "unit": "px"
+      }
+    },
+    "default": {
+      "$value": {
+        "value": 48,
+        "unit": "px"
+      }
+    },
+    "compact": {
+      "$value": {
+        "value": 40,
+        "unit": "px"
+      }
+    }
+  }
+}
