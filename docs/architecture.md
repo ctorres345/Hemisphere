@@ -96,7 +96,9 @@ Rules:
 - `core:input` is UI infrastructure, not a screen: it may read the Face buttons setting from
   `core:data` directly.
 - New features (search, viewer, editor, archives) arrive as new `feature:*` modules. Archive
-  formats arrive as a `core:archive` module (see ADR [0004](adr/0004-archive-libraries.md)).
+  formats arrive as a `core:archive` module (see ADR [0004](adr/0004-archive-libraries.md)),
+  a data-layer module that depends on `core:model`, `core:fs` and `core:jobs`; the module-graph
+  check lists it when it is added.
 
 ## 3. `core:fs`: the file-system abstraction
 
@@ -129,7 +131,7 @@ interface FileSystemProvider {
     fun list(dir: FsPath): Flow<FsResult<List<Entry>>>             // raw batches; the flow ends when the folder is done
     suspend fun stat(path: FsPath): FsResult<Entry>
     suspend fun openRead(path: FsPath, offset: Long = 0): FsResult<Source>  // offset > 0 only if capabilities.resume
-    suspend fun openRandomAccess(path: FsPath): FsResult<SeekableSource>    // only if capabilities.randomAccess
+    suspend fun openRandomAccess(path: FsPath): FsResult<SeekableSource>    // only if capabilities.randomAccess; else use RandomAccessOpener
     suspend fun openWrite(path: FsPath, mode: WriteMode, sizeHint: Long? = null): FsResult<Sink> // WriteMode.Append only if capabilities.resume
     suspend fun createDirectory(path: FsPath): FsResult<Entry>
     suspend fun rename(path: FsPath, newName: String): FsResult<Entry>
@@ -144,6 +146,15 @@ interface FileSystemProvider {
 // In core:platform, kept out of FileSystemProvider so that interface stays plain Kotlin.
 interface ShareUriProvider {
     suspend fun shareableUri(path: FsPath): FsResult<Uri>  // FileProvider or SAF URI, for Intents only
+}
+
+// In core:fs: private scratch space on internal storage, for work that must seek.
+interface ScratchSpace {
+    suspend fun create(sizeHint: Long?): FsResult<ScratchFile>  // NoSpace if internal storage cannot fit it
+}
+interface ScratchFile : AutoCloseable {   // close() deletes the file
+    fun channel(): SeekableByteChannel    // java.nio.channels: read, write and seek
+    fun source(): Source                  // read it back from the start, to copy it out
 }
 ```
 
@@ -240,14 +251,29 @@ interface ShareUriProvider {
   older version. The string form is for storage only: Room tables store it next to a separate
   key column (the serialized `EntryKey`) and look rows up by the key, so a new string version or
   a refreshed `ref` never hides an old row. No other code builds or parses either form.
-- **Random access** (7z extraction, the image viewer) uses `openRandomAccess` when the provider
-  has the `randomAccess` capability. Otherwise the caller copies the file to the app cache first.
-  Features never fall back to `File`. Writers that need to seek (7z creation, rest of v1) write to
-  the app cache, then copy the result through `openWrite`.
+- **Random access** (7z extraction, the image viewer) uses `openRandomAccess`. `SeekableSource`
+  wraps a read-only `SeekableByteChannel`, which Commons Compress `SevenZFile` accepts. Callers
+  go through `RandomAccessOpener` in `core:fs`: it calls `openRandomAccess` when the provider has
+  the `randomAccess` capability, and otherwise copies the file into a `ScratchFile` first, with
+  progress, cancellation and a `NoSpace` error like any copy. Closing that `SeekableSource`
+  deletes the scratch file. Callers never see `File`.
+- **Seekable writes** (7z creation, rest of v1): `SevenZOutputFile` needs a
+  `SeekableByteChannel`, which a `Sink` cannot give. The writer creates a `ScratchFile`, writes
+  the archive through its `channel()`, then copies `source()` to the destination through
+  `openWrite`, with the usual temp name, conflicts and progress. Both stages are one job, and
+  the job owns the `ScratchFile`: it closes it when it ends, fails or is cancelled. A scratch
+  file cannot be resumed, so after process death that job becomes `Failed` (not `Paused`), says
+  so, and its scratch file is deleted at app start with every other one.
+  Scratch files live in a `scratch/` folder under `noBackupFilesDir`, not the cache folder,
+  because Android may purge the cache while the job runs. They never appear as a volume.
+  `ScratchSpace` reserves the size hint with `StorageManager.allocateBytes` (it frees the app's
+  cache if it must) and returns `NoSpace` when that fails. Limit: the archive is built on
+  internal storage, so creating a 7z for an SD card needs that much free internal space too.
+  Only data-layer modules (`core:fs`, `core:archive`) use `ScratchSpace`.
 - **Capabilities** decide behavior, not the provider type. Example: a move inside one volume
   uses `move` only when the provider has it. Trash is not a provider capability: `core:jobs`
   decides per volume whether it has Trash (section 5).
-- **Hidden app entries**: `.Trash-hemisphere` and `.hemisphere-part-*` are the app's own files.
+- **Hidden app entries**: `.Trash-hemisphere`, `.hemisphere-part-*` and `.hemisphere-rename-*` are the app's own files.
   `core:jobs` owns the rule that names them (`InternalEntries`). `ObserveFolderUseCase` drops
   them from listings, and the job walker skips them, so a whole-volume copy does not copy the
   Trash.
@@ -261,8 +287,8 @@ all-files access. The browser shows these folders as locked, with a short explan
 
 ## 4. `core:jobs`: the job queue
 
-Copy, move and delete run in a queue that we own, executed by a foreground service. See ADR
-[0005](adr/0005-job-queue.md).
+Copy, move, delete, restore, rename and new folder run in a queue that we own. Long jobs run in
+a foreground service. See ADR [0005](adr/0005-job-queue.md).
 
 ```
 use case ──enqueue(Job)──► JobQueue ──persists──► Room (jobs, cursor, records)
@@ -285,7 +311,7 @@ ObserveJobsUseCase ◄── StateFlow<List<JobState>> (progress chip, queue she
 - **Records** that must outlive the job (failures, skips, what Undo needs) grow by one row per
   file they cover. They are written in the same Room transaction that advances the cursor, so a
   crash never leaves finished files without their records and Undo is never silently partial.
-  Undo covers delete, move and rename (section 5), not copy, so a copy writes records only for
+  Undo covers delete, move, rename and new folder (section 5), not copy, so a copy writes records only for
   failures, skips and each Replace (the target it sent to Trash).
 - **Counting**: a counting pass runs beside the copy and fills in the totals for the progress
   bar. It does not hold back the first byte.
@@ -293,8 +319,34 @@ ObserveJobsUseCase ◄── StateFlow<List<JobState>> (progress chip, queue she
 - **Volume removed** (SD card or USB drive pulled): jobs that touch it move to `Paused` with a
   `VolumeUnavailable` error and resume only if the same volume comes back. Its temp files are
   cleaned when it mounts again. A pane showing it falls back to internal storage.
-- **One job runs at a time per destination volume**; jobs on different volumes may run in
+- **One long job runs at a time per destination volume**; jobs on different volumes may run in
   parallel (at most 2).
+- **Short jobs**: rename and new folder are jobs too, so they share the queue's records, Undo
+  and errors. They run at once, in the app process, without starting the service and without
+  waiting behind a long job. Two jobs may not overlap: `JobQueue.enqueue` checks this
+  atomically, in both directions (a short job against queued and running long jobs, and a long
+  job against unfinished short jobs). Paths overlap when one is the other, or an ancestor or
+  descendant of it, so renaming `/SD` while copying into `/SD/ROMs` is refused too. The refused
+  job is not queued; the user sees "In use by a job". A rename waiting on the conflict sheet
+  keeps its claim until it is answered or cancelled.
+- **Rename**: the use case checks the new name against the volume's limits before enqueueing.
+  The conflict check skips the entry being renamed: on a case-insensitive volume `a.txt` to
+  `A.txt` has the same `EntryKey`, so it is a case-only rename, not a conflict. A case-only
+  rename goes through a temp name (`.hemisphere-rename-<job>`), because some file systems ignore
+  a rename to a name that differs only in case. The job records each step, and stores the path
+  the provider returned after the first step (SAF may return a new document id), as for temp
+  files; the second step renames that path and then checks the final name. If the app dies
+  between the steps, the rename finishes when the job's volume is next mounted. This is the one
+  exception to "Nothing resumes silently" below, because until then the user's file is hidden.
+  Rename temps are never deleted by temp-file cleanup. When the mount scan finds a
+  `.hemisphere-rename-*` entry with no job record (the app data was cleared, or the card comes
+  from another device), it renames the entry to `Recovered <job>`, with a Keep-both suffix if
+  that name is taken, so the file never stays hidden.
+  A name taken by another entry shows the conflict sheet (Skip, Replace, Keep both); Replace
+  sends that other entry to Trash first, as for copy.
+- **New folder**: a taken name is shown as an error in the name dialog, before the job is
+  queued; `AlreadyExists` from the provider is the backstop. Undo deletes the folder only if it
+  is still empty.
 - **Fast paths**: a move inside one volume uses `move` when the provider has the `move`
   capability. Copy plus delete is used only across volumes or when `move` is missing. A copy
   inside one volume uses `copy` when the provider has `serverCopy` (network shares, v1.x).
@@ -328,7 +380,8 @@ ObserveJobsUseCase ◄── StateFlow<List<JobState>> (progress chip, queue she
 - **Conflicts** pause the job in `WaitingForConflict`. The conflict sheet answers it, from the
   progress chip, the queue sheet or the notification; "apply to all" is stored on the job.
 - **Process death**: on start, jobs that were `Running` become `Paused` and show in the progress
-  chip with a Resume action. Nothing resumes silently.
+  chip with a Resume action. Nothing resumes silently, except an unfinished case-only rename
+  (see Rename), and a 7z creation job fails instead (section 3).
 - **Notifications**: on Android 13+ the app asks for `POST_NOTIFICATIONS` when the first job is
   queued. If it is denied, the job still runs. The progress chip and the queue sheet offer every
   action the notification has (pause, cancel, answer a conflict, resume), so nothing depends on
@@ -375,7 +428,7 @@ never a cross-volume copy. See ADR [0007](adr/0007-trash-format.md).
   `core:jobs` also scans each volume's `info/` folder when `VolumeRepository` reports it mounted.
 - Volumes without Trash (read-only, providers that cannot move, folders granted by hand, later
   network) delete permanently, with the `danger` dialog and no Undo.
-- Undo for delete, move and rename is a reverse job queued in `core:jobs`.
+- Undo for delete, move, rename and new folder is a reverse job queued in `core:jobs`.
 - **Restore** is a job too. It recreates missing parent folders, and if the original path is
   taken, it shows the conflict sheet (Skip, Replace, Keep both).
 
@@ -482,6 +535,7 @@ between ViewModels.
 | --- | --- |
 | `ObserveFolderUseCase` | Streams a folder's entries, sorted and filtered by its saved view settings |
 | `CopyEntriesUseCase`, `MoveEntriesUseCase` | Checks the target and enqueues a job |
+| `RenameEntryUseCase`, `CreateFolderUseCase` | Checks the name and enqueues a short job |
 | `DeleteEntriesUseCase` | Sends entries to Trash; on a volume without Trash it returns "needs confirmation" so the screen shows the `danger` dialog first |
 | `RestoreFromTrashUseCase` | Enqueues a restore job |
 | `ObserveJobsUseCase`, `ResolveConflictUseCase` | Job progress and conflict answers |

@@ -69,7 +69,10 @@ anything a linter can check is left to the linter and listed only once here.
 
 | Rule | From | Checked by |
 | --- | --- | --- |
-| Copy, move and delete always go through a use case that enqueues a job on `JobQueue`, never a direct provider call. | arch §4 | Review, Konsist test |
+| Copy, move, delete, rename and new folder always go through a use case that enqueues a job on `JobQueue`, never a direct provider call. | arch §4 | Review, Konsist test |
+| A rename's conflict check skips the entry being renamed; a case-only rename goes through a `.hemisphere-rename-*` temp name that cleanup never deletes, and an orphaned one is renamed back to a visible name. | arch §4 | `core:jobs` tests on a case-insensitive `InMemoryProvider` |
+| `JobQueue.enqueue` refuses a job whose paths overlap an unfinished job's (same path, ancestor or descendant). | arch §4 | `core:jobs` tests |
+| Code that must seek while writing uses `ScratchSpace`, never `File` or `createTempFile`. | arch §3 | Detekt `ForbiddenMethodCall` on the `createTempFile` variants and `ForbiddenImport` on `java.io.File`, both excluding `core:fs`; review |
 | Delete on a volume with Trash goes to Trash; permanent delete only from the Trash screen or on volumes without Trash, with the `danger` dialog. | arch §5 | `core:jobs` tests |
 | A move inside one volume uses `move` when the provider has the `move` capability; copy plus delete only otherwise. | arch §4 | `core:jobs` tests |
 | A job stores its roots and a path cursor, never one row per file up front; records and the cursor are written in one transaction. | arch §4 | `core:jobs` tests, review |
