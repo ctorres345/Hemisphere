@@ -6,7 +6,7 @@ import org.junit.Test
 
 class ModuleGraphRulesTest {
     private val all = ModuleGraphRules.allowed.keys
-    private val required = listOf(Edge(":core:domain", Scope.API, ":core:model", "api"))
+    private val required = ModuleGraphRules.required.map { Edge(it.from, it.scope, it.to, it.scope.declaration) }
 
     private fun violations(vararg edges: Edge, compose: List<String> = emptyList()) =
         ModuleGraphRules.violations(all, required + edges, compose)
@@ -49,8 +49,55 @@ class ModuleGraphRulesTest {
 
     @Test
     fun `core domain must expose core model as api`() {
-        val errors = ModuleGraphRules.violations(all, emptyList(), emptyList())
+        val errors = ModuleGraphRules.violations(all, required.filterNot { it.from == ":core:domain" && it.to == ":core:model" }, emptyList())
         assertEquals(listOf(":core:domain must declare :core:model as api (docs/architecture.md §2)."), errors)
+    }
+
+    @Test
+    fun `removing any required edge fails with that edge named`() {
+        required.forEach { missing ->
+            val errors = ModuleGraphRules.violations(all, required - missing, emptyList())
+            assertEquals(
+                listOf("${missing.from} must declare ${missing.to} as ${missing.configuration} (docs/architecture.md §2)."),
+                errors,
+            )
+        }
+    }
+
+    @Test
+    fun `a required edge declared with another scope still fails`() {
+        val asImplementation = Edge(":core:fs", Scope.IMPLEMENTATION, ":core:model", "implementation")
+        val edges = required.filterNot { it.from == ":core:fs" && it.to == ":core:model" } + asImplementation
+        assertEquals(1, ModuleGraphRules.violations(all, edges, emptyList()).size)
+    }
+
+    @Test
+    fun `a required edge declared only for one variant still fails`() {
+        val debugOnly = Edge(":core:fs", Scope.API, ":core:model", "debugApi")
+        val edges = required.filterNot { it.from == ":core:fs" && it.to == ":core:model" } + debugOnly
+        assertEquals(1, ModuleGraphRules.violations(all, edges, emptyList()).size)
+    }
+
+    @Test
+    fun `the required set is the edges section 2 states`() {
+        val model = listOf(":core:fs", ":core:jobs", ":core:data", ":core:platform", ":core:domain")
+        val dataLayer = listOf(":core:fs", ":core:jobs", ":core:data")
+        val expected =
+            model.map { ModuleGraphRules.Required(it, Scope.API, ":core:model") } +
+                dataLayer.map { ModuleGraphRules.Required(":core:domain", Scope.IMPLEMENTATION, it) } +
+                dataLayer.map { ModuleGraphRules.Required(":core:testing", Scope.API, it) }
+        assertEquals(expected.toSet(), ModuleGraphRules.required)
+    }
+
+    @Test
+    fun `an edge the table only allows is not required`() {
+        // feature:jobs lists core:mvi in the table but does not use it yet.
+        assertTrue(ModuleGraphRules.required.none { it.from.startsWith(":feature:") || it.from == ":app" })
+    }
+
+    @Test
+    fun `required edges are allowed edges`() {
+        ModuleGraphRules.required.forEach { assertTrue("$it", it.to in ModuleGraphRules.allowed.getValue(it.from).orEmpty()) }
     }
 
     @Test

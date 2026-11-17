@@ -13,7 +13,8 @@ import org.gradle.kotlin.dsl.register
 
 /**
  * Applied to the root project. Adds `checkModuleGraph`, run by `./gradlew check`, which fails on any
- * dependency docs/architecture.md §2 does not allow. It also runs build-logic's own tests.
+ * dependency docs/architecture.md §2 does not allow, or a missing one it requires. It also runs
+ * build-logic's own tests.
  */
 class ModuleGraphConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
@@ -22,7 +23,7 @@ class ModuleGraphConventionPlugin : Plugin<Project> {
         val task =
             target.tasks.register<ModuleGraphCheckTask>("checkModuleGraph") {
                 group = "verification"
-                description = "Fails on a module dependency that docs/architecture.md §2 does not allow."
+                description = "Fails on a module dependency that docs/architecture.md §2 does not allow or requires and is missing."
                 report.set(target.layout.buildDirectory.file("reports/module-graph.txt"))
             }
         target.tasks.named("check").configure {

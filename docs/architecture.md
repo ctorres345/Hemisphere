@@ -87,7 +87,11 @@ Rules:
   `JobQueue` and repositories are not reached through `core:domain`. A build file could still
   declare one directly, so the scaffold adds a module-graph check task: it lists the allowed
   dependencies per module type and fails the build on any other edge, including Compose in
-  `core:domain`, `core:fs`, `core:jobs` or `core:data`.
+  `core:domain`, `core:fs`, `core:jobs` or `core:data`. It also fails when an edge these rules
+  require is missing: `core:model` as `api` from the data layer, `core:platform` and
+  `core:domain`; the data layer as `implementation` from `core:domain`; and the data layer as
+  `api` from `core:testing`. The table lists what a module may use, so an edge it lists that a
+  module does not use yet is not required.
 - Feature tests may use `core:testing` (`testImplementation`). It declares `core:fs`,
   `core:jobs` and `core:data` as `api`, so test code (and only test code) gets the fakes and the
   data interfaces needed to build real use cases over them.

@@ -1,6 +1,7 @@
 /**
  * The allowed module graph from docs/architecture.md §2, and the check that compares the real graph
- * against it. A new module (for example `core:archive`) is added here in the same PR as the module.
+ * against it. A new module (for example `core:archive`) is added here, to [allowed] and, when §2
+ * states one of its edges as a rule, to [required], in the same PR as the module.
  */
 internal object ModuleGraphRules {
     private const val MODEL = ":core:model"
@@ -35,9 +36,25 @@ internal object ModuleGraphRules {
     /** `core:domain` exposes only `core:model` as `api`, so the data layer stays off a feature's classpath. */
     private val apiOnly = mapOf(":core:domain" to setOf(MODEL))
 
-    enum class Scope { API, IMPLEMENTATION, TEST }
+    enum class Scope(val declaration: String) { API("api"), IMPLEMENTATION("implementation"), TEST("testImplementation") }
 
     data class Edge(val from: String, val scope: Scope, val to: String, val configuration: String)
+
+    /** An edge §2 states as a rule, so it must be declared, not just allowed. */
+    data class Required(val from: String, val scope: Scope, val to: String)
+
+    /**
+     * The edges §2 requires. The table's "Depends on" column lists what a module may use, so a
+     * module that does not use a listed module yet is fine; these come from the rules under it:
+     * every data-layer module, `core:platform` and `core:domain` expose `core:model` as `api`;
+     * `core:domain` takes the data layer as `implementation`; `core:testing` exposes it as `api`.
+     * A module added to `dataLayer` therefore needs those edges in the same PR. Only the plain
+     * configuration counts: `debugApi` or `compileOnly` does not meet the rule.
+     */
+    val required: Set<Required> =
+        (dataLayer + ":core:platform" + ":core:domain").map { Required(it, Scope.API, MODEL) }.toSet() +
+            dataLayer.map { Required(":core:domain", Scope.IMPLEMENTATION, it) } +
+            dataLayer.map { Required(TESTING, Scope.API, it) }
 
     /**
      * The scope of a declarable configuration such as `implementation`, `debugApi` or `testImplementation`,
@@ -80,10 +97,12 @@ internal object ModuleGraphRules {
                     errors += "$where: ${edge.from} may expose only ${apiOnly.getValue(edge.from)} as api."
             }
         }
-        apiOnly.forEach { (module, api) ->
-            api.filter { target -> edges.none { it.from == module && it.to == target && it.scope == Scope.API } }
-                .forEach { errors += "$module must declare $it as api (docs/architecture.md §2)." }
-        }
+        required
+            .filter { need ->
+                need.from in projects &&
+                    edges.none { it.from == need.from && it.to == need.to && it.configuration == need.scope.declaration }
+            }
+            .forEach { errors += "${it.from} must declare ${it.to} as ${it.scope.declaration} (docs/architecture.md §2)." }
         composeUsers.distinct().sorted().forEach { line ->
             errors += "$line: Compose is not allowed in ${noCompose.sorted().joinToString()}."
         }
