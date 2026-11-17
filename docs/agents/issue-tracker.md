@@ -58,7 +58,7 @@ searchJiraIssuesUsingJql(cloudId, jql: "project = HEM AND statusCategory != Done
 
 ## Rules
 
-- Branch for a ticket: `cesar/HEM-<n>` off `main`. Screenshots go on `cesar/HEM-<n>-shots`. The PR names the key.
+- Branch for a ticket: `cesar/HEM-<n>` off `mvp` (the default branch until the MVP ships). Screenshots go on `cesar/HEM-<n>-shots`. The PR names the key.
 - **Until the MVP ships, ticket PRs target `mvp`, not `main`.** `main` stays at the empty initial
   commit; the MVP lands on `main` as one squash-merge.
 - UI/UX tickets need an acceptance criterion that the PR includes screenshots (before/after;
