@@ -8,23 +8,32 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.onStart
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 /** The volume of the app's own `home` folder: readable without any storage permission. */
 val AppHomeVolume = VolumeId("app-home")
 
 /**
- * The walking skeleton's volumes: only the app's own `home` folder under [appFilesDir]. An empty
+ * The walking skeleton's volumes: only the app's own `home` folder under [appFilesDir]. A new
  * home gets a few sample folders and files on the first listing, so there is something to see.
  * Real storage volumes replace this with the storage-access ticket.
  */
 fun appHomeVolumes(
     appFilesDir: File,
     ioDispatcher: CoroutineDispatcher,
-): VolumeRepository = AppHomeVolumeRepository(File(appFilesDir, "home"), ioDispatcher)
+): VolumeRepository =
+    AppHomeVolumeRepository(
+        home = File(appFilesDir, "home"),
+        seedMarker = File(appFilesDir, SampleContent.MARKER_NAME),
+        ioDispatcher = ioDispatcher,
+    )
 
 internal class AppHomeVolumeRepository(
     private val home: File,
+    private val seedMarker: File,
     private val ioDispatcher: CoroutineDispatcher,
 ) : VolumeRepository {
     private val seedLock = Any()
@@ -42,7 +51,7 @@ internal class AppHomeVolumeRepository(
     /** Runs on the IO dispatcher. A failed seed is retried on the next listing; it never fails the listing. */
     private fun seedOnce() =
         synchronized(seedLock) {
-            if (!seeded) seeded = SampleContent.seedIfEmpty(home)
+            if (!seeded) seeded = SampleContent.seed(home, seedMarker)
         }
 
     override fun homeFolder(): FsPath = FsPath.root(AppHomeVolume)
@@ -51,20 +60,51 @@ internal class AppHomeVolumeRepository(
         if (volume == AppHomeVolume) FsResult.Ok(provider) else FsResult.Err(FsError.VolumeUnavailable)
 }
 
-/** A few entries for an empty home folder, so a fresh install shows a list. */
+/**
+ * A few entries for a new home folder, so a fresh install shows a list.
+ *
+ * A marker file beside home (never inside it, so it never shows in a listing) records progress:
+ * [STARTED] before the first sample is written, [DONE] after the last. While it is not [DONE], each
+ * run writes the samples that are missing, so a seed that failed or was killed halfway is finished
+ * later. With no marker, a home holding only sample names is treated the same way (a seed cut
+ * short before the marker existed); a home with any other file belongs to the user and is left alone.
+ */
 internal object SampleContent {
+    const val MARKER_NAME = ".home-seed"
+    const val STARTED = "started"
+    const val DONE = "done"
+
     private val folders = listOf("Documents", "Music", "Pictures", "ROMs")
     private val files = mapOf("Readme.txt" to "Hemisphere sample file.\n", "notes.md" to "# Notes\n")
+    private val sampleNames = folders.toSet() + files.keys
 
-    /** True when home needs no seeding or was seeded; false when writing failed. */
-    fun seedIfEmpty(home: File): Boolean {
-        return try {
+    fun isDone(marker: File): Boolean = readMarker(marker) == DONE
+
+    private fun readMarker(marker: File): String? = if (marker.isFile) marker.readText() else null
+
+    /** True when home needs no more seeding; false when a write failed and the next run should retry. */
+    fun seed(
+        home: File,
+        marker: File,
+    ): Boolean =
+        try {
             home.mkdirs()
-            val children = home.list()
-            if (children == null || children.isNotEmpty()) return true
-            folders.forEach { File(home, it).mkdir() }
-            files.forEach { (name, text) -> File(home, name).writeText(text) }
-            true
+            val children = home.list() ?: return false // home could not be made: try again later
+            when {
+                isDone(marker) -> {}
+
+                // A marker that is empty or unreadable is judged like a missing one, by what home holds.
+                readMarker(marker) == STARTED || children.all { it in sampleNames } -> {
+                    writeMarker(marker, STARTED)
+                    writeMissing(home, marker)
+                }
+
+                // Other files and no seed started: the user's own home.
+                else -> {
+                    writeMarker(marker, DONE)
+                }
+            }
+            isDone(marker)
         } catch (
             @Suppress("SwallowedException") e: IOException,
         ) {
@@ -75,5 +115,33 @@ internal object SampleContent {
         ) {
             false
         }
+
+    /** Replaces the marker in one step, so a crash never leaves it empty or half written. */
+    private fun writeMarker(
+        marker: File,
+        text: String,
+    ) {
+        val temp = File(marker.parentFile, "${marker.name}.tmp")
+        FileOutputStream(temp).use { out ->
+            out.write(text.toByteArray())
+            out.fd.sync() // on disk before the rename, so a power cut cannot leave an empty marker
+        }
+        Files.move(temp.toPath(), marker.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+    }
+
+    /** Never overwrites: an entry that is already there is kept as it is. */
+    private fun writeMissing(
+        home: File,
+        marker: File,
+    ) {
+        folders
+            .map { File(home, it) }
+            .filterNot { it.exists() }
+            .forEach { if (!it.mkdir()) throw IOException("Could not create ${it.name}") }
+        files.forEach { (name, text) ->
+            val file = File(home, name)
+            if (!file.exists()) file.writeText(text)
+        }
+        writeMarker(marker, DONE)
     }
 }

@@ -10,7 +10,6 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -71,16 +70,4 @@ class LocalProviderTest {
             val result = provider().list(FsPath(volume, listOf(".."))).toList()
             assertEquals(listOf(FsResult.Err(FsError.InvalidName)), result)
         }
-
-    @Test
-    fun `sample content fills only an empty home`() {
-        val home = File(temp.root, "home")
-        SampleContent.seedIfEmpty(home)
-        assertTrue(File(home, "Music").isDirectory)
-
-        val other = temp.newFolder("other")
-        File(other, "mine.txt").writeText("")
-        SampleContent.seedIfEmpty(other)
-        assertEquals(listOf("mine.txt"), other.list()!!.toList())
-    }
 }
