@@ -56,7 +56,7 @@ Touch and gamepad/D-pad are equal, first-class input methods.
 | Button | Action |
 |---|---|
 | Ⓐ | Open |
-| Ⓑ | Back / up one level / leave selection |
+| Ⓑ | Leave selection, else back (same as system back) |
 | Ⓧ | Context menu |
 | Ⓨ | Toggle selection (hold + D-pad: range) |
 | L1 / R1 | Switch pane |
@@ -402,7 +402,7 @@ add the device to this table once it is measured.
 
 - Name: no file manager called Hemisphere on Play, F-Droid or GitHub (checked 2026-11-16).
   Bare "Hemisphere" is crowded (Hemisphere GNSS trademarks, Hemisphere Games), so the store
-  name is **Hemisphere Explorer** (in-app and icon: "Hemisphere") and the package ID is `io.github.<owner>.hemisphere`. Do a
-  USPTO/EUIPO search before a Play Store launch.
+  name is **Hemisphere Explorer** (in-app and icon: "Hemisphere") and the package ID is `io.github.ctorres345.hemisphere`. Do a
+  USPTO/EUIPO search before the first public release on any channel (ADR 0003).
 - Mascot and icon: two half-circles with Via the cat curled between them.
 - Final hex values for the 8 accents, after the contrast script exists.

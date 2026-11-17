@@ -19,6 +19,10 @@ Add the test command to `.nousfx/project.toml` under `[check]` in the same PR as
 
 - Design system spec: `docs/design-system.md`. It is the visual source for every UI ticket until
   a prototype is approved. Use tokens only: no raw colors, sizes or font values in UI code.
+- Architecture: `docs/architecture.md` (modules, `core:fs`, the job queue, Trash, state,
+  layers, navigation, persistence, DI). Decisions and their reasons: `docs/adr/`. Domain words:
+  `GLOSSARY.md`.
+- Code rules: `docs/code-guidelines.md`. Read it before writing Kotlin.
 - Tickets: Jira project `HEM`. Template and labels: `docs/agents/`.
 - Branches: `cesar/<HEM-KEY>` off `mvp` (the default branch until the MVP ships); screenshots on `cesar/<HEM-KEY>-shots`. Until the MVP
   ships, ticket PRs target `mvp`, not `main` (see `docs/agents/issue-tracker.md`).
