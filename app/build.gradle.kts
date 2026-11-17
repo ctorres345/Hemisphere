@@ -21,7 +21,6 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.kotlinx.coroutines.core)
-    testImplementation(project(":core:testing"))
     testImplementation(libs.konsist)
 }
 
