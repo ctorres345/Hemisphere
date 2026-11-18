@@ -41,9 +41,21 @@ gradlePlugin {
             id = "hemisphere.hilt"
             implementationClass = "HiltConventionPlugin"
         }
+        register("designTokens") {
+            id = "hemisphere.design.tokens"
+            implementationClass = "DesignTokensConventionPlugin"
+        }
         register("moduleGraph") {
             id = "hemisphere.module.graph"
             implementationClass = "ModuleGraphConventionPlugin"
         }
     }
+}
+
+// ThemeTokensCodegenTest reads the repo's tokens/ files, so a token edit must rerun it.
+tasks.test {
+    inputs
+        .dir(rootDir.resolve("../tokens"))
+        .withPropertyName("designTokens")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
 }

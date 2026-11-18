@@ -1,6 +1,15 @@
-# core:designsystem defines the color tokens, so it may call Color(...). The temp-file rules stay.
+# core:designsystem defines the tokens, so it may call Color(...) and use dp and sp. The other rules stay.
 # Detekt replaces lists instead of merging them: keep this list in step with detekt.yml.
 style:
+  ForbiddenImport:
+    active: true
+    imports:
+      - value: 'java.io.File'
+        reason: 'Use FsPath. Only core:fs touches files (ADR 0006).'
+      - value: 'java.nio.file.Path'
+        reason: 'Use FsPath. Only core:fs touches files (ADR 0006).'
+      - value: 'java.nio.file.Paths'
+        reason: 'Use FsPath. Only core:fs touches files (ADR 0006).'
   ForbiddenMethodCall:
     active: true
     methods:

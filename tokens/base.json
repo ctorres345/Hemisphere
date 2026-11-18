@@ -176,5 +176,22 @@
         "unit": "px"
       }
     }
+  },
+  "size": {
+    "$type": "dimension",
+    "appBar": {
+      "$value": {
+        "value": 56,
+        "unit": "px"
+      },
+      "$description": "Top app bar height in touch mode (prototype .appbar)."
+    },
+    "border": {
+      "$value": {
+        "value": 1,
+        "unit": "px"
+      },
+      "$description": "Outline width of buttons and fields (prototype .btn border)."
+    }
   }
 }
