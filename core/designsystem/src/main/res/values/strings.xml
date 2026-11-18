@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Gamepad button-hint footer (docs/design-system.md §3). The button glyphs are the pad's own labels, so they are not translated. -->
+    <string name="designsystem_hint_open">Open</string>
+    <string name="designsystem_hint_back">Back</string>
+    <string name="designsystem_hint_menu">Menu</string>
+    <!-- "Mark", not "Select", so it is not confused with the physical Select button. -->
+    <string name="designsystem_hint_mark">Mark</string>
+    <string name="designsystem_hint_pane">Pane</string>
+    <string name="designsystem_glyph_l1" translatable="false">L1</string>
+    <string name="designsystem_glyph_r1" translatable="false">R1</string>
+</resources>

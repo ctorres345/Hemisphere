@@ -192,6 +192,48 @@
         "unit": "px"
       },
       "$description": "Outline width of buttons and fields (prototype .btn border)."
+    },
+    "focusRing": {
+      "$value": {
+        "value": 2,
+        "unit": "px"
+      },
+      "$description": "Gamepad focus ring stroke width (prototype .gf outline)."
+    },
+    "focusRingGap": {
+      "$value": {
+        "value": 2,
+        "unit": "px"
+      },
+      "$description": "Gap between a filled or selected control and its focus ring (prototype outline-offset 2px); rows draw the ring inside instead."
+    },
+    "hintFooter": {
+      "$value": {
+        "value": 32,
+        "unit": "px"
+      },
+      "$description": "Height of the gamepad button-hint footer (prototype .hints)."
+    },
+    "hintGlyph": {
+      "$value": {
+        "value": 18,
+        "unit": "px"
+      },
+      "$description": "Size of a button glyph in the hint footer (prototype .gl)."
+    },
+    "hintGlyphBorder": {
+      "$value": {
+        "value": 1.5,
+        "unit": "px"
+      },
+      "$description": "Outline width of a hint glyph (prototype .gl border)."
+    },
+    "dualMinWidth": {
+      "$value": {
+        "value": 600,
+        "unit": "px"
+      },
+      "$description": "Window width from which Auto layout shows two panes (design-system §2). Narrower windows use phone spacing, such as the hint footer's m gap (prototype .dev[data-d=phone] .hints)."
     }
   }
 }
