@@ -7,6 +7,11 @@ combination against WCAG 2.2 contrast:
 - text pairs need 4.5:1 (WCAG 1.4.3, body text; no token pair here is large-text only),
 - the focus ring, border.strong and accent shapes need 3:1 (WCAG 1.4.11, non-text contrast).
 
+It also keeps every accent apart from the status colors (danger, warning, success), so a red accent never
+reads as an error (HEM-26): in OKLab, an accent's fill, text and focus must be at least MIN_HUE_GAP degrees
+of hue and MIN_DELTA_E away from each status color. These are guard rails against near-copies, set well
+below today's closest pair (red and danger in Dark: about 13 degrees, 0.038).
+
 Usage: python3 tools/contrast/check_contrast.py [--tokens DIR]
 Exit codes: 0 all pass, 1 a pair fails, 2 a token file is missing or malformed.
 
@@ -20,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 import sys
 from dataclasses import dataclass
@@ -31,6 +37,11 @@ ACCENT_ROLES = ("fill", "onFill", "tint", "focus", "text")
 SURFACES = ("surface.canvas", "surface.raised", "surface.overlay")
 TEXT = 4.5
 NON_TEXT = 3.0
+MIN_HUE_GAP = 5.0  # degrees of OKLCh hue
+MIN_DELTA_E = 0.02  # OKLab distance, about one just-noticeable step
+MIN_CHROMA = 0.02  # below this OKLab chroma a color is near gray and its hue is noise
+SEMANTICS = ("danger", "warning", "success")
+DISTINCT_ROLES = ("fill", "text", "focus")  # tint is a background wash, not read as a status color
 
 HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
 ALIAS = re.compile(r"^\{color\.([A-Za-z0-9.]+)\}$")
@@ -62,6 +73,67 @@ def relative_luminance(hex_color: str) -> float:
 def contrast(a: str, b: str) -> float:
     hi, lo = sorted((relative_luminance(a), relative_luminance(b)), reverse=True)
     return (hi + 0.05) / (lo + 0.05)
+
+
+def oklab(hex_color: str) -> tuple[float, float, float]:
+    """sRGB #RRGGBB to OKLab (L, a, b), per Björn Ottosson's reference matrices."""
+
+    def linear(i: int) -> float:
+        c = int(hex_color[i : i + 2], 16) / 255
+        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+    r, g, b = (linear(i) for i in (1, 3, 5))
+    l_ = (0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b) ** (1 / 3)
+    m_ = (0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b) ** (1 / 3)
+    s_ = (0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b) ** (1 / 3)
+    return (
+        0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
+        1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
+        0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_,
+    )
+
+
+def hue_gap(a: str, b: str) -> float:
+    """The shorter angle between two colors' OKLCh hues, 0 to 180 degrees.
+
+    180 when either color is near gray: its hue means nothing, so only delta E can tell the two apart.
+    """
+    (_, a1, b1), (_, a2, b2) = oklab(a), oklab(b)
+    if min(math.hypot(a1, b1), math.hypot(a2, b2)) < MIN_CHROMA:
+        return 180.0
+    gap = abs(math.degrees(math.atan2(b1, a1)) - math.degrees(math.atan2(b2, a2))) % 360
+    return min(gap, 360 - gap)
+
+
+def delta_e(a: str, b: str) -> float:
+    """Euclidean distance in OKLab."""
+    return math.dist(oklab(a), oklab(b))
+
+
+def status_distances(colors: dict[str, str], accent: str) -> list[tuple[str, str, float, float]]:
+    """(accent token, status token, hue gap, delta E) for each accent role and status color, rounded down
+    as for contrast, so 4.99 degrees never prints or passes as 5.0."""
+    rows = []
+    for role in DISTINCT_ROLES:
+        name = f"accent.{accent}.{role}"
+        for sem in SEMANTICS:
+            status = f"semantic.{sem}"
+            gap, de = hue_gap(colors[name], colors[status]), delta_e(colors[name], colors[status])
+            rows.append((name, status, int(gap * 10) / 10, int(de * 1000) / 1000))
+    return rows
+
+
+def status_clashes(colors: dict[str, str], accent: str) -> list[str]:
+    """Accent roles that sit too close to a status color, as failure lines."""
+    failures = []
+    for name, status, gap_shown, de_shown in status_distances(colors, accent):
+        if gap_shown < MIN_HUE_GAP or de_shown < MIN_DELTA_E:
+            failures.append(
+                f"{name} {colors[name]} vs {status} {colors[status]}: hue {gap_shown:.1f} deg, "
+                f"delta E {de_shown:.3f}, needs {MIN_HUE_GAP} deg and {MIN_DELTA_E} "
+                f"(looks like a status color)"
+            )
+    return failures
 
 
 def load_theme(tokens_dir: Path, theme: str) -> dict[str, str]:
@@ -161,6 +233,8 @@ class Result:
     failures: list[str]
     lowest_text: float
     lowest_focus: float
+    closest_hue: float  # smallest hue gap to any status color
+    closest_delta_e: float  # smallest ΔE to any status color; may be a different pair
 
 
 def check(tokens_dir: Path) -> list[Result]:
@@ -183,7 +257,19 @@ def check(tokens_dir: Path) -> list[Result]:
                         f"{p.fg} {colors[p.fg]} on {p.bg} {colors[p.bg]}: "
                         f"{shown:.2f}:1, needs {p.minimum}:1 ({p.why})"
                     )
-            results.append(Result(theme, accent, failures, min(text_ratios), min(focus_ratios)))
+            failures.extend(status_clashes(colors, accent))
+            distances = status_distances(colors, accent)
+            results.append(
+                Result(
+                    theme,
+                    accent,
+                    failures,
+                    min(text_ratios),
+                    min(focus_ratios),
+                    min(d[2] for d in distances),
+                    min(d[3] for d in distances),
+                )
+            )
     return results
 
 
@@ -203,7 +289,8 @@ def main(argv: list[str] | None = None) -> int:
         status = "FAIL" if r.failures else "ok  "
         print(
             f"{status} {r.theme:<6} x {r.accent:<6}  "
-            f"lowest text {r.lowest_text:5.2f}:1  lowest focus {r.lowest_focus:5.2f}:1"
+            f"lowest text {r.lowest_text:5.2f}:1  lowest focus {r.lowest_focus:5.2f}:1  "
+            f"to status: min hue {r.closest_hue:5.1f} deg, min dE {r.closest_delta_e:.3f}"
         )
         for f in r.failures:
             print(f"       {f}")

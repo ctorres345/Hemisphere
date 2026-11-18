@@ -154,7 +154,9 @@ The values come from `tokens/color.light.json`, `tokens/color.dark.json` and
 
 All 8 accents have the same perceived brightness (OKLCH lightness) within a theme, so none looks
 heavier than the others. Red, amber and green sit a little away from `danger`, `warning` and `success`
-in hue. `accent.focus` and `accent.text` are aliases of `accent.fill` (`{color.accent.<name>.fill}`)
+in hue. The contrast check keeps every accent's fill, text and focus at least 5° of OKLCh hue and an
+OKLab ΔE of 0.02 from each status color, so no accent becomes a copy of one (HEM-26). Today's closest
+pair is red and `danger` in Dark and AMOLED, about 13° apart. `accent.focus` and `accent.text` are aliases of `accent.fill` (`{color.accent.<name>.fill}`)
 for every accent today.
 
 Final `accent.fill` values (HEM-6). `accent.onFill` is `#FFFFFF` in Light and a dark shade of the

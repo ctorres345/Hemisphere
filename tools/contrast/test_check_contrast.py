@@ -160,6 +160,37 @@ class Failures(unittest.TestCase):
         self.assertEqual(code, 1, out)
         self.assertIn(f"{len(cc.ACCENTS)} failed.", out)
 
+    def test_red_accent_near_danger_fails(self):
+        # 3.6 degrees of hue and delta E 0.010 from Dark's danger (#F2827A): a near-copy that reads as an error.
+        with fixture_tokens("dark", ["accent", "red", "fill"], "#F5807F") as tokens:
+            code, out = run(tokens)
+        self.assertEqual(code, 1, out)
+        self.assertIn("FAIL dark   x red", out)
+        self.assertIn("accent.red.fill #F5807F vs semantic.danger #F2827A", out)
+        self.assertIn("looks like a status color", out)
+
+    def test_status_color_moved_onto_an_accent_fails(self):
+        # Moving the status color, not the accent, is caught too: success copies the green accent.
+        with fixture_tokens("light", ["semantic", "success"], "#3A7400") as tokens:
+            code, out = run(tokens)
+        self.assertEqual(code, 1, out)
+        self.assertIn("accent.green.fill #3A7400 vs semantic.success #3A7400: hue 0.0 deg, delta E 0.000", out)
+
+    def test_same_hue_but_far_in_lightness_still_fails_on_hue(self):
+        # Same hue as Light's danger (#B3261E) but much darker (delta E 0.13): the hue floor alone catches it.
+        with fixture_tokens("light", ["accent", "pink", "text"], "#7A1812") as tokens:
+            code, out = run(tokens)
+        self.assertEqual(code, 1, out)
+        self.assertIn("accent.pink.text #7A1812 vs semantic.danger #B3261E: hue 0.0 deg", out)
+
+    def test_tiny_step_past_the_hue_floor_still_fails_on_delta_e(self):
+        # Light's warning (#8A5300) turned about 6.7 degrees in hue at the same lightness: delta E 0.013.
+        with fixture_tokens("light", ["accent", "amber", "fill"], "#855700") as tokens:
+            code, out = run(tokens)
+        self.assertEqual(code, 1, out)
+        self.assertIn("accent.amber.fill #855700 vs semantic.warning #8A5300: hue 6.7 deg, delta E 0.013", out)
+
+
     def test_missing_token_is_an_error(self):
         with fixture_tokens("dark", ["accent", "teal", "tint"], None) as tokens:
             code, out = run(tokens)
@@ -176,6 +207,46 @@ class Failures(unittest.TestCase):
             code, out = run(tokens)
         self.assertEqual(code, 2, out)
         self.assertIn("accent.red.text", out)
+
+
+
+class StatusDistance(unittest.TestCase):
+    def test_identical_colors_have_no_gap(self):
+        self.assertEqual(cc.hue_gap("#B3261E", "#B3261E"), 0.0)
+        self.assertEqual(cc.delta_e("#B3261E", "#B3261E"), 0.0)
+
+    def test_hue_gap_wraps_around(self):
+        # atan2 jumps from +180 to -180 at cyan: #00C8A0 sits at hue 171.5 and #00C8B4 at -177.6 (182.4).
+        # The gap is 10.9 the short way round, not 349.1.
+        self.assertAlmostEqual(cc.hue_gap("#00C8A0", "#00C8B4"), 10.9, delta=0.1)
+        self.assertAlmostEqual(cc.hue_gap("#00C8B4", "#00C8A0"), 10.9, delta=0.1)
+        # And across 0: #C8007A at 353.6 and #FF0066 at 10.5 are 16.9 apart.
+        self.assertAlmostEqual(cc.hue_gap("#C8007A", "#FF0066"), 16.9, delta=0.1)
+
+    def test_near_gray_has_no_hue_to_compare(self):
+        # A gray's hue is rounding noise, so only delta E can flag it.
+        self.assertEqual(cc.hue_gap("#808081", "#B3261E"), 180.0)
+
+    def test_oklab_white_is_l_1(self):
+        lightness, a, b = cc.oklab("#FFFFFF")
+        self.assertAlmostEqual(lightness, 1.0, places=3)
+        self.assertAlmostEqual(a, 0.0, places=3)
+        self.assertAlmostEqual(b, 0.0, places=3)
+
+    def test_current_tokens_clear_the_floor_with_room(self):
+        # The approved Option B accents pass with at least twice the floors to spare. The closest pair is
+        # red vs danger in Dark and AMOLED (13.2 degrees, delta E 0.038), as docs/design-system.md says.
+        results = cc.check(REAL_TOKENS)
+        self.assertGreaterEqual(min(r.closest_hue for r in results), 2 * cc.MIN_HUE_GAP)
+        self.assertGreaterEqual(min(r.closest_delta_e for r in results), 1.5 * cc.MIN_DELTA_E)
+        closest = min(results, key=lambda r: r.closest_hue)
+        self.assertEqual((closest.accent, closest.closest_hue, closest.closest_delta_e), ("red", 13.2, 0.038))
+
+    def test_output_shows_the_closest_status_distance(self):
+        code, out = run(REAL_TOKENS)
+        self.assertEqual(code, 0, out)
+        self.assertIn("ok   dark   x red", out)
+        self.assertRegex(out, r"ok   dark   x red .* to status: min hue  13\.2 deg, min dE 0\.038")
 
 
 if __name__ == "__main__":
