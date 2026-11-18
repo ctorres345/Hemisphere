@@ -6,6 +6,7 @@ import io.github.ctorres345.hemisphere.core.model.FsError
 import io.github.ctorres345.hemisphere.core.model.FsPath
 import io.github.ctorres345.hemisphere.core.model.Listing
 import io.github.ctorres345.hemisphere.core.model.VolumeId
+import io.github.ctorres345.hemisphere.feature.browser.selection.keyOf
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -85,6 +86,25 @@ class PaneReducerTest {
 
         assertEquals(lock, next.lock)
         assertEquals(Listing(emptyList(), complete = true), next.listing)
+    }
+
+    @Test
+    fun `a folder that turns out locked drops its selection`() {
+        val key = TabState(backStack = listOf(music)).keyOf(row)
+        val selecting =
+            TabState(
+                backStack = listOf(music),
+                listing = Listing(listOf(row), complete = true),
+                selection = setOf(key),
+                selectionAnchor = key,
+            )
+
+        val next =
+            reducePane(PaneState(tabs = listOf(selecting)), PaneResult.ListingStarted(music, FolderLock(locked = true)))
+                .tab
+
+        assertTrue(next.selection.isEmpty())
+        assertNull(next.selectionAnchor)
     }
 
     @Test

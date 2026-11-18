@@ -25,12 +25,16 @@ data class PaneState(
  * One tab: its history, where the user was in each folder on it, the open folder's listing and the
  * selection. [backStack] is never empty; its last folder is the open one. [lock] says whether Android
  * keeps the open folder, or some of its children, private.
+ *
+ * [selection] holds keys of the open folder's rows; [selectionAnchor] is the row a long-press on a
+ * second row selects the range from (`selection/SelectionReducer.kt`). A new folder starts with none.
  */
 data class TabState(
     val backStack: List<FsPath>,
     val anchors: Map<EntryKey, ScrollAnchor> = emptyMap(),
     val listing: Listing = LOADING,
     val selection: Set<EntryKey> = emptySet(),
+    val selectionAnchor: EntryKey? = null,
     val lock: FolderLock = FolderLock.NONE,
 ) {
     init {
