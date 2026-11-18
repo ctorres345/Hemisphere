@@ -143,7 +143,7 @@ class SampleContentTest {
     fun `the marker never shows in the home listing`() =
         runTest(StandardTestDispatcher()) {
             val dispatcher = StandardTestDispatcher(testScheduler)
-            val repo = AppHomeVolumeRepository(home, marker, dispatcher, seedSamples = true)
+            val repo = AppHomeVolumeRepository(home, marker, home, GrantedAccess, dispatcher, seedSamples = true)
             val provider = (repo.providerFor(AppHomeVolume) as FsResult.Ok).value
 
             val names =
@@ -166,7 +166,7 @@ class SampleContentTest {
             home.setWritable(false) // every sample write now fails
             assumeFalse("root ignores the read-only bit", home.canWrite())
             val dispatcher = StandardTestDispatcher(testScheduler)
-            val repo = AppHomeVolumeRepository(home, marker, dispatcher, seedSamples = true)
+            val repo = AppHomeVolumeRepository(home, marker, home, GrantedAccess, dispatcher, seedSamples = true)
             val provider = (repo.providerFor(AppHomeVolume) as FsResult.Ok).value
 
             val results = provider.list(FsPath.root(AppHomeVolume)).toList()
@@ -181,7 +181,7 @@ class SampleContentTest {
     fun `without samples a fresh home lists empty and nothing is written`() =
         runTest(StandardTestDispatcher()) {
             val dispatcher = StandardTestDispatcher(testScheduler)
-            val repo = AppHomeVolumeRepository(home, marker, dispatcher, seedSamples = false)
+            val repo = AppHomeVolumeRepository(home, marker, home, GrantedAccess, dispatcher, seedSamples = false)
             val provider = (repo.providerFor(AppHomeVolume) as FsResult.Ok).value
 
             // An empty folder completes without a batch; an error would show up here.

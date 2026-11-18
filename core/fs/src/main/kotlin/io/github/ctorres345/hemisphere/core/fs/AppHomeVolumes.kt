@@ -3,6 +3,7 @@ package io.github.ctorres345.hemisphere.core.fs
 import io.github.ctorres345.hemisphere.core.model.FsError
 import io.github.ctorres345.hemisphere.core.model.FsPath
 import io.github.ctorres345.hemisphere.core.model.FsResult
+import io.github.ctorres345.hemisphere.core.model.StorageAccessState
 import io.github.ctorres345.hemisphere.core.model.VolumeId
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.flowOn
@@ -16,19 +17,27 @@ import java.nio.file.StandardCopyOption
 /** The volume of the app's own `home` folder: readable without any storage permission. */
 val AppHomeVolume = VolumeId("app-home")
 
+/** The device's internal storage (the shared storage root), readable once [StorageAccess] is granted (HEM-39). */
+val PrimaryVolume = VolumeId("primary")
+
 /**
- * The walking skeleton's volumes: only the app's own `home` folder under [appFilesDir]. In debug
- * builds a new home gets a few sample folders and files on the first listing, so there is
- * something to see. Release builds never seed ([BuildConfig.SEED_SAMPLES]) and start with an
- * empty home. Real storage volumes replace this with the storage-access ticket.
+ * The app's volumes: the internal storage at [primaryRoot], which the app opens on and which is
+ * served only while [storageAccess] is granted, and the app's own `home` folder under [appFilesDir].
+ * In debug builds a new app home gets a few sample folders and files on its first listing, so
+ * there is something to see. Release builds never seed ([BuildConfig.SEED_SAMPLES]) and start with
+ * an empty app home. SD cards and picked folders come with later tickets.
  */
 fun appHomeVolumes(
     appFilesDir: File,
+    primaryRoot: File,
+    storageAccess: StorageAccess,
     ioDispatcher: CoroutineDispatcher,
 ): VolumeRepository =
     AppHomeVolumeRepository(
         home = File(appFilesDir, "home"),
         seedMarker = File(appFilesDir, SampleContent.MARKER_NAME),
+        primaryRoot = primaryRoot,
+        storageAccess = storageAccess,
         ioDispatcher = ioDispatcher,
         seedSamples = BuildConfig.SEED_SAMPLES,
     )
@@ -36,9 +45,12 @@ fun appHomeVolumes(
 internal class AppHomeVolumeRepository(
     private val home: File,
     private val seedMarker: File,
+    private val primaryRoot: File,
+    private val storageAccess: StorageAccess,
     private val ioDispatcher: CoroutineDispatcher,
     private val seedSamples: Boolean,
 ) : VolumeRepository {
+    private val primaryProvider = LocalProvider(mapOf(PrimaryVolume to primaryRoot), ioDispatcher)
     private val seedLock = Any()
     private var seeded = false
     private val local = LocalProvider(mapOf(AppHomeVolume to home), ioDispatcher)
@@ -68,10 +80,26 @@ internal class AppHomeVolumeRepository(
             }
         }
 
-    override fun homeFolder(): FsPath = FsPath.root(AppHomeVolume)
+    override fun homeFolder(): FsPath = FsPath.root(PrimaryVolume)
 
     override fun providerFor(volume: VolumeId): FsResult<FileSystemProvider> =
-        if (volume == AppHomeVolume) FsResult.Ok(provider) else FsResult.Err(FsError.VolumeUnavailable)
+        when (volume) {
+            PrimaryVolume -> {
+                if (storageAccess.state.value == StorageAccessState.Granted) {
+                    FsResult.Ok(primaryProvider)
+                } else {
+                    FsResult.Err(FsError.AccessDenied)
+                }
+            }
+
+            AppHomeVolume -> {
+                FsResult.Ok(provider)
+            }
+
+            else -> {
+                FsResult.Err(FsError.VolumeUnavailable)
+            }
+        }
 }
 
 /**

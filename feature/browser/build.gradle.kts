@@ -17,6 +17,8 @@ dependencies {
     implementation(project(":core:mvi"))
     implementation(libs.compose.material3)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.core.ktx)
 
     testImplementation(libs.robolectric)
     testImplementation(libs.roborazzi)

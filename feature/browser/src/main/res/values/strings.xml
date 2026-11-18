@@ -9,4 +9,9 @@
     <string name="browser_error_volume_unavailable">This storage isn\'t available. Is it still connected?</string>
     <string name="browser_error_unreachable">Can\'t reach this storage right now.</string>
     <string name="browser_error_generic">Something went wrong while reading this folder.</string>
+    <string name="access_reason">Hemisphere needs access to your files to show and manage them.</string>
+    <string name="access_reason_settings">Turn on file access for Hemisphere in the app settings.</string>
+    <string name="access_grant">Allow access</string>
+    <string name="access_open_settings">Open settings</string>
+    <string name="access_pick_folder">Pick a folder instead</string>
 </resources>

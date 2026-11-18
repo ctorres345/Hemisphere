@@ -22,6 +22,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.compose.material3)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
@@ -42,4 +43,18 @@ tasks.withType<Test>().configureEach {
             },
         ).withPropertyName("konsistSources")
         .withPathSensitivity(PathSensitivity.RELATIVE)
+}
+
+// MergedManifestTest reads the merged manifest of the debug and release variants. The unit-test tasks depend on
+// the manifest merge of both, so the test never reads a stale or missing file; each file is also a task input.
+tasks.withType<Test>().configureEach {
+    listOf("Debug", "Release").forEach { variant ->
+        val merged =
+            layout.buildDirectory.file(
+                "intermediates/merged_manifests/${variant.lowercase()}/process${variant}Manifest/AndroidManifest.xml",
+            )
+        dependsOn("process${variant}Manifest")
+        inputs.file(merged).withPropertyName("mergedManifest$variant").withPathSensitivity(PathSensitivity.NONE)
+        systemProperty("hemisphere.mergedManifest.${variant.lowercase()}", merged.get().asFile.absolutePath)
+    }
 }
