@@ -1,0 +1,7 @@
+# The jobs DAO has one function per query, and RoomJobQueue keeps every state change behind its one
+# lock in one class (HEM-43), so both raise the function threshold from 11 (16 for interfaces,
+# 18 for classes).
+complexity:
+  TooManyFunctions:
+    thresholdInInterfaces: 16
+    thresholdInClasses: 18
