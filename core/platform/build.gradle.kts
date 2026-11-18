@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.hemisphere.android.library)
+    alias(libs.plugins.hemisphere.hilt)
 }
 
 dependencies {
