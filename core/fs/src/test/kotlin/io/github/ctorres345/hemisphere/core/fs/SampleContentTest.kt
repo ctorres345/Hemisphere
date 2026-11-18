@@ -3,6 +3,7 @@ package io.github.ctorres345.hemisphere.core.fs
 import io.github.ctorres345.hemisphere.core.model.Entry
 import io.github.ctorres345.hemisphere.core.model.FsPath
 import io.github.ctorres345.hemisphere.core.model.FsResult
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -24,6 +25,18 @@ class SampleContentTest {
     private val samples = listOf("Documents", "Music", "Pictures", "ROMs", "Readme.txt", "notes.md")
 
     private fun homeNames() = home.list()!!.sorted()
+
+    private fun repoFor(
+        dispatcher: CoroutineDispatcher,
+        seedSamples: Boolean,
+    ) = AppHomeVolumeRepository(
+        home,
+        marker,
+        LocalProvider(mapOf(PrimaryVolume to home), dispatcher),
+        GrantedAccess,
+        dispatcher,
+        seedSamples = seedSamples,
+    )
 
     @Test
     fun `an empty home gets every sample and is marked done`() {
@@ -142,8 +155,7 @@ class SampleContentTest {
     @Test
     fun `the marker never shows in the home listing`() =
         runTest(StandardTestDispatcher()) {
-            val dispatcher = StandardTestDispatcher(testScheduler)
-            val repo = AppHomeVolumeRepository(home, marker, home, GrantedAccess, dispatcher, seedSamples = true)
+            val repo = repoFor(StandardTestDispatcher(testScheduler), seedSamples = true)
             val provider = (repo.providerFor(AppHomeVolume) as FsResult.Ok).value
 
             val names =
@@ -165,8 +177,7 @@ class SampleContentTest {
             marker.writeText(SampleContent.STARTED)
             home.setWritable(false) // every sample write now fails
             assumeFalse("root ignores the read-only bit", home.canWrite())
-            val dispatcher = StandardTestDispatcher(testScheduler)
-            val repo = AppHomeVolumeRepository(home, marker, home, GrantedAccess, dispatcher, seedSamples = true)
+            val repo = repoFor(StandardTestDispatcher(testScheduler), seedSamples = true)
             val provider = (repo.providerFor(AppHomeVolume) as FsResult.Ok).value
 
             val results = provider.list(FsPath.root(AppHomeVolume)).toList()
@@ -180,8 +191,7 @@ class SampleContentTest {
     @Test
     fun `without samples a fresh home lists empty and nothing is written`() =
         runTest(StandardTestDispatcher()) {
-            val dispatcher = StandardTestDispatcher(testScheduler)
-            val repo = AppHomeVolumeRepository(home, marker, home, GrantedAccess, dispatcher, seedSamples = false)
+            val repo = repoFor(StandardTestDispatcher(testScheduler), seedSamples = false)
             val provider = (repo.providerFor(AppHomeVolume) as FsResult.Ok).value
 
             // An empty folder completes without a batch; an error would show up here.

@@ -11,6 +11,13 @@ sealed interface FsResult<out T> {
     ) : FsResult<Nothing>
 }
 
+/** Runs [next] on a success; an error passes through unchanged. */
+inline fun <T, R> FsResult<T>.andThen(next: (T) -> FsResult<R>): FsResult<R> =
+    when (this) {
+        is FsResult.Err -> this
+        is FsResult.Ok -> next(value)
+    }
+
 /** Why a file-system call failed. The UI turns each one into a message and, where it can, an action. */
 sealed interface FsError {
     data object NotFound : FsError

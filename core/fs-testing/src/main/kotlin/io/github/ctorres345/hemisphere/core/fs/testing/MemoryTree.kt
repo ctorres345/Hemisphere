@@ -11,6 +11,7 @@ import io.github.ctorres345.hemisphere.core.model.FsResult
 import io.github.ctorres345.hemisphere.core.model.ProviderRef
 import io.github.ctorres345.hemisphere.core.model.VolumeId
 import io.github.ctorres345.hemisphere.core.model.VolumeLimits
+import io.github.ctorres345.hemisphere.core.model.andThen
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.FilterInputStream
@@ -505,11 +506,5 @@ internal class MemoryTree(
         ): Int = throw IOException("injected read failure")
     }
 }
-
-private inline fun <T, R> FsResult<T>.andThen(next: (T) -> FsResult<R>): FsResult<R> =
-    when (this) {
-        is FsResult.Err -> this
-        is FsResult.Ok -> next(value)
-    }
 
 private inline fun <T, R> FsResult<T>.map(transform: (T) -> R): FsResult<R> = andThen { FsResult.Ok(transform(it)) }

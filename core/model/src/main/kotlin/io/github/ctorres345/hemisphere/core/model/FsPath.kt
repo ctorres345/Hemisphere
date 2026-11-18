@@ -89,6 +89,9 @@ class FsPath(
         ref: ProviderRef? = null,
     ): FsPath = FsPath(volume, segments + name, ref, caseInsensitive, idAddressed)
 
+    /** The folder that holds this entry; the volume root is its own parent. */
+    fun parent(): FsPath = FsPath(volume, segments.dropLast(1), null, caseInsensitive, idAddressed)
+
     override fun equals(other: Any?): Boolean = other is FsPath && other.key == key
 
     override fun hashCode(): Int = key.hashCode()
