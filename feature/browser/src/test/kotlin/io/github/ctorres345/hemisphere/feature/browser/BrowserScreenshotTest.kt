@@ -23,8 +23,12 @@ import org.robolectric.annotation.GraphicsMode
  * diff images as the `roborazzi-diffs` artifact.
  *
  * After an intended UI change, re-record on Linux: run the `android` workflow by hand on the branch with
- * `record-screenshots` ticked, download its `screenshot-goldens` artifact, and commit its images over
- * `src/test/screenshots/`. On a Linux machine, `./gradlew recordRoborazziDebug` does the same.
+ * `record-screenshots` ticked, download its `screenshot-goldens` artifact, unzip it at the repo root (it
+ * keeps each image's repo path) and commit the images. On a Linux machine, `./gradlew recordRoborazziDebug`
+ * does the same.
+ *
+ * So `verifyRoborazziDebug` is only meaningful on Linux; on macOS it can fail on text edges alone. Prove a
+ * change on CI's `gradle-check`, not with a local run on a Mac.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
