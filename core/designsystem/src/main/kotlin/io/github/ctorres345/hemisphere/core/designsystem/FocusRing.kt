@@ -69,11 +69,11 @@ private class FocusRingNode(
 
     override fun ContentDrawScope.draw() {
         drawContent()
-        if (!focused || currentValueOf(LocalInputMode) != InputMode.Gamepad) return
         val stroke = HemisphereSizes.focusRing.toPx()
-        // An element smaller than the stroke (one collapsing in an animation) has no room for an
-        // inside ring, and a negative outline size would make the shape throw.
-        if (placement == FocusRingPlacement.Inside && size.minDimension <= stroke) return
+        // An element with no area, or one smaller than the stroke for an inside ring (say, collapsing
+        // in an animation), gets no ring: a negative outline size would make the shape throw.
+        val minSize = if (placement == FocusRingPlacement.Inside) stroke else 0f
+        if (!focused || currentValueOf(LocalInputMode) != InputMode.Gamepad || size.minDimension <= minSize) return
         // How far the ring's center line sits from the element's edge: inward for Inside, outward past the gap.
         val grow =
             when (placement) {
