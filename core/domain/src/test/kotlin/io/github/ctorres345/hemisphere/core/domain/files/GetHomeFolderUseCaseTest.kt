@@ -1,7 +1,7 @@
 package io.github.ctorres345.hemisphere.core.domain.files
 
+import io.github.ctorres345.hemisphere.core.fs.testing.FakeVolumeRepository
 import io.github.ctorres345.hemisphere.core.model.FsPath
-import io.github.ctorres345.hemisphere.core.testing.FakeVolumeRepository
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

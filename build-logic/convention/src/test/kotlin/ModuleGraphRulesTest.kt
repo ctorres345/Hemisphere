@@ -20,6 +20,8 @@ class ModuleGraphRulesTest {
                 Edge(":feature:browser", Scope.TEST, ":core:testing", "testImplementation"),
                 Edge(":core:domain", Scope.IMPLEMENTATION, ":core:fs", "implementation"),
                 Edge(":core:testing", Scope.API, ":core:jobs", "api"),
+                Edge(":core:jobs", Scope.TEST, ":core:fs-testing", "testImplementation"),
+                Edge(":core:fs-testing", Scope.API, ":core:fs", "api"),
                 Edge(":app", Scope.IMPLEMENTATION, ":core:fs", "implementation"),
             )
         assertEquals(emptyList<String>(), violations(*edges))
@@ -85,7 +87,7 @@ class ModuleGraphRulesTest {
         val expected =
             model.map { ModuleGraphRules.Required(it, Scope.API, ":core:model") } +
                 dataLayer.map { ModuleGraphRules.Required(":core:domain", Scope.IMPLEMENTATION, it) } +
-                dataLayer.map { ModuleGraphRules.Required(":core:testing", Scope.API, it) }
+                (dataLayer + ":core:fs-testing").map { ModuleGraphRules.Required(":core:testing", Scope.API, it) }
         assertEquals(expected.toSet(), ModuleGraphRules.required)
     }
 
@@ -127,7 +129,7 @@ class ModuleGraphRulesTest {
     fun `core testing is not added to itself or to a module it is built from`() {
         // Pinned: widening what core:testing may use silently takes core:testing away from more modules.
         assertEquals(
-            setOf(":core:testing", ":core:model", ":core:fs", ":core:jobs", ":core:data", ":core:platform"),
+            setOf(":core:testing", ":core:fs-testing", ":core:model", ":core:fs", ":core:jobs", ":core:data", ":core:platform"),
             ModuleGraphRules.withoutSharedTesting,
         )
     }
@@ -155,5 +157,36 @@ class ModuleGraphRulesTest {
         val errors = violations(Edge(":core:fs", Scope.TEST, ":core:testing", "testImplementation"))
         assertEquals(1, errors.size)
         assertTrue(errors.single().startsWith(":core:fs -> :core:testing"))
+    }
+
+    @Test
+    fun `core jobs and core data may use core fs-testing in tests only`() {
+        listOf(":core:jobs", ":core:data").forEach { module ->
+            assertEquals(emptyList<String>(), violations(Edge(module, Scope.TEST, ":core:fs-testing", "testImplementation")))
+            assertEquals(1, violations(Edge(module, Scope.IMPLEMENTATION, ":core:fs-testing", "implementation")).size)
+        }
+    }
+
+    @Test
+    fun `core fs may not use core fs-testing, which is built on it`() {
+        assertEquals(1, violations(Edge(":core:fs", Scope.TEST, ":core:fs-testing", "testImplementation")).size)
+    }
+
+    @Test
+    fun `core fs-testing in a feature or in core domain fails`() {
+        assertEquals(1, violations(Edge(":feature:browser", Scope.TEST, ":core:fs-testing", "testImplementation")).size)
+        assertEquals(1, violations(Edge(":core:domain", Scope.TEST, ":core:fs-testing", "testImplementation")).size)
+    }
+
+    @Test
+    fun `core fs-testing may use only core model and core fs`() {
+        assertEquals(1, violations(Edge(":core:fs-testing", Scope.API, ":core:jobs", "api")).size)
+        assertEquals(1, violations(Edge(":core:fs-testing", Scope.TEST, ":core:testing", "testImplementation")).size)
+    }
+
+    @Test
+    fun `core fs-testing is not Compose`() {
+        assertEquals(1, violations(compose = listOf(":core:fs-testing (Compose compiler plugin)")).size)
+        assertTrue(":core:fs-testing" in ModuleGraphRules.noCompose)
     }
 }

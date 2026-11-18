@@ -3,9 +3,9 @@ package io.github.ctorres345.hemisphere.feature.browser
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.Composable
+import io.github.ctorres345.hemisphere.core.fs.testing.file
+import io.github.ctorres345.hemisphere.core.fs.testing.folder
 import io.github.ctorres345.hemisphere.core.model.FsError
-import io.github.ctorres345.hemisphere.core.testing.file
-import io.github.ctorres345.hemisphere.core.testing.folder
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

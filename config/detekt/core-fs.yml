@@ -1,6 +1,7 @@
 # core:fs is the one module that touches java.io.File and temp files (ADR 0006).
 # Detekt replaces lists instead of merging them: keep this list in step with detekt.yml.
 # Only the Color rule stays.
+# FileSystemProvider mirrors the architecture §3 interface (12 calls), and a provider implements all of them.
 style:
   ForbiddenImport:
     active: false
@@ -9,3 +10,8 @@ style:
     methods:
       - value: 'androidx.compose.ui.graphics.Color'
         reason: 'UI code uses design tokens, never raw colors (design-system §5).'
+
+complexity:
+  TooManyFunctions:
+    thresholdInInterfaces: 20
+    thresholdInClasses: 25

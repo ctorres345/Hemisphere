@@ -1,16 +1,16 @@
 package io.github.ctorres345.hemisphere.core.domain.files
 
 import io.github.ctorres345.hemisphere.core.fs.FileSystemProvider
+import io.github.ctorres345.hemisphere.core.fs.testing.FakeVolumeRepository
+import io.github.ctorres345.hemisphere.core.fs.testing.InMemoryProvider
+import io.github.ctorres345.hemisphere.core.fs.testing.file
+import io.github.ctorres345.hemisphere.core.fs.testing.folder
 import io.github.ctorres345.hemisphere.core.model.Entry
 import io.github.ctorres345.hemisphere.core.model.FsError
 import io.github.ctorres345.hemisphere.core.model.FsPath
 import io.github.ctorres345.hemisphere.core.model.FsResult
 import io.github.ctorres345.hemisphere.core.model.Listing
 import io.github.ctorres345.hemisphere.core.model.VolumeId
-import io.github.ctorres345.hemisphere.core.testing.FakeVolumeRepository
-import io.github.ctorres345.hemisphere.core.testing.InMemoryProvider
-import io.github.ctorres345.hemisphere.core.testing.file
-import io.github.ctorres345.hemisphere.core.testing.folder
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.flow
@@ -120,7 +120,7 @@ class ObserveFolderUseCaseTest {
     fun `a cancelled listing ends cancelled and reports no error`() =
         test {
             val stalls =
-                object : FileSystemProvider {
+                object : FileSystemProvider by InMemoryProvider() {
                     override fun list(dir: FsPath) =
                         flow<FsResult<List<Entry>>> {
                             emit(FsResult.Ok(listOf(folder("Alpha"))))

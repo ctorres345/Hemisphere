@@ -2,13 +2,13 @@ package io.github.ctorres345.hemisphere.feature.browser
 
 import io.github.ctorres345.hemisphere.core.domain.files.GetHomeFolderUseCase
 import io.github.ctorres345.hemisphere.core.domain.files.ObserveFolderUseCase
+import io.github.ctorres345.hemisphere.core.fs.testing.FakeVolumeRepository
+import io.github.ctorres345.hemisphere.core.fs.testing.InMemoryProvider
+import io.github.ctorres345.hemisphere.core.fs.testing.file
+import io.github.ctorres345.hemisphere.core.fs.testing.folder
 import io.github.ctorres345.hemisphere.core.model.FsError
 import io.github.ctorres345.hemisphere.core.model.FsPath
-import io.github.ctorres345.hemisphere.core.testing.FakeVolumeRepository
-import io.github.ctorres345.hemisphere.core.testing.InMemoryProvider
 import io.github.ctorres345.hemisphere.core.testing.MainDispatcherRule
-import io.github.ctorres345.hemisphere.core.testing.file
-import io.github.ctorres345.hemisphere.core.testing.folder
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Rule

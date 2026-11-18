@@ -4,9 +4,13 @@ import io.github.ctorres345.hemisphere.core.model.FsError
 import io.github.ctorres345.hemisphere.core.model.FsPath
 import io.github.ctorres345.hemisphere.core.model.FsResult
 import io.github.ctorres345.hemisphere.core.model.StorageAccessState
+import io.github.ctorres345.hemisphere.core.model.Volume
 import io.github.ctorres345.hemisphere.core.model.VolumeId
+import io.github.ctorres345.hemisphere.core.model.VolumeLimits
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import java.io.File
 import java.io.FileOutputStream
@@ -55,7 +59,7 @@ internal class AppHomeVolumeRepository(
     private var seeded = false
     private val local = LocalProvider(mapOf(AppHomeVolume to home), ioDispatcher)
     private val provider =
-        object : FileSystemProvider {
+        object : FileSystemProvider by local {
             override fun list(dir: FsPath) =
                 local
                     .list(dir)
@@ -100,6 +104,24 @@ internal class AppHomeVolumeRepository(
                 FsResult.Err(FsError.VolumeUnavailable)
             }
         }
+
+    /** The app's own folder is always there; internal storage joins once the storage permission is granted. */
+    override fun observeVolumes(): Flow<List<Volume>> =
+        storageAccess.state.map { state ->
+            if (state == StorageAccessState.Granted) listOf(primaryVolume, appHomeVolume) else listOf(appHomeVolume)
+        }
+
+    override fun limitsFor(volume: VolumeId): FsResult<VolumeLimits> =
+        if (volume == PrimaryVolume || volume == AppHomeVolume) {
+            FsResult.Ok(VolumeLimits.NONE) // app-private and shared internal storage are case-sensitive, no size cap
+        } else {
+            FsResult.Err(FsError.VolumeUnavailable)
+        }
+
+    private companion object {
+        val primaryVolume = Volume(PrimaryVolume, "Internal storage", Volume.Kind.Internal)
+        val appHomeVolume = Volume(AppHomeVolume, "App files", Volume.Kind.Internal)
+    }
 }
 
 /**

@@ -10,6 +10,6 @@ internal fun VersionCatalog.version(alias: String): String = findVersion(alias).
 
 internal fun VersionCatalog.library(alias: String) = findLibrary(alias).get()
 
-/** `:core:fs` becomes `io.github.ctorres345.hemisphere.core.fs` (architecture §2: packages follow modules). */
+/** `:core:fs` becomes `io.github.ctorres345.hemisphere.core.fs`, `:core:fs-testing` `...core.fs.testing` (architecture §2: packages follow modules). */
 internal val Project.hemisphereNamespace: String
-    get() = "io.github.ctorres345.hemisphere" + path.replace(':', '.')
+    get() = "io.github.ctorres345.hemisphere" + path.replace(':', '.').replace('-', '.')

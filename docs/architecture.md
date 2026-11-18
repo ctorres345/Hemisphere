@@ -68,7 +68,8 @@ Three layers, as in Google's guide to app architecture: UI, domain and data. Eac
 | `core:fs` | The file-system abstraction (section 3), volumes, the local and SAF providers, MediaStore scans; implements `ShareUriProvider` | `core:model`, `core:platform` |
 | `core:jobs` | The job queue (section 4), conflicts, Trash (section 5), and the `state.db` Room database that stores them | `core:fs`, `core:data` |
 | `core:data` | The `user.db` Room database, DataStore settings, their repositories, the `VolumeStore` implementation | `core:fs` |
-| `core:testing` | Test fakes for every data-layer interface (`InMemoryProvider`, `FakeJobQueue`, fake repositories), used by test source sets only | `core:fs`, `core:jobs`, `core:data` |
+| `core:fs-testing` | `InMemoryProvider`, `FakeVolumeRepository` and the abstract `FileSystemProviderContract` suite every provider must pass; used by test source sets only | `core:model`, `core:fs` |
+| `core:testing` | Test fakes for every data-layer interface (`FakeJobQueue`, fake repositories) and `core:fs-testing` re-exported, used by test source sets only | `core:fs-testing`, `core:fs`, `core:jobs`, `core:data` |
 | `feature:browser` | The Browser screen: shell (Single and Dual), panes, file list, selection, clipboard tray | `core:domain`, `core:designsystem`, `core:input`, `core:platform`, `core:mvi` |
 | `feature:jobs` | Progress chip, queue sheet, conflict sheet. `app` shows them above every screen (Browser, Trash, Settings), so a conflict can be answered from anywhere. | `core:domain`, `core:designsystem`, `core:input`, `core:mvi` |
 | `feature:settings` | Settings screens (theme, accent, layout pin, Face buttons, Trash retention) | `core:domain`, `core:designsystem`, `core:input`, `core:mvi` |
@@ -90,14 +91,19 @@ Rules:
   `core:domain`, `core:fs`, `core:jobs` or `core:data`. It also fails when an edge these rules
   require is missing: `core:model` as `api` from the data layer, `core:platform` and
   `core:domain`; the data layer as `implementation` from `core:domain`; and the data layer as
-  `api` from `core:testing`. The table lists what a module may use, so an edge it lists that a
+  `api` from `core:testing`, which also exposes `core:fs-testing` as `api`. The table lists what a module may use, so an edge it lists that a
   module does not use yet is not required.
 - The convention plugins give every module's tests JUnit and `kotlinx-coroutines-test`, and every
   Android module's tests `core:testing` (`testImplementation`), so build files do not list them.
-  `core:testing` and the modules it is built from (`core:model`, `core:fs`, `core:jobs`,
-  `core:data`, `core:platform`) do not get `core:testing`; the module-graph check fails if one
-  does. `core:testing` declares `core:fs`, `core:jobs` and `core:data` as `api`, so test code (and only test
-  code) gets the fakes and the data interfaces needed to build real use cases over them.
+  `core:testing` and the modules it is built from (`core:model`, `core:fs`, `core:fs-testing`,
+  `core:jobs`, `core:data`, `core:platform`) do not get `core:testing`; the module-graph check fails
+  if one does. `core:testing` declares `core:fs`, `core:fs-testing`, `core:jobs` and `core:data` as `api`, so test
+  code (and only test code) gets the fakes and the data interfaces needed to build real use cases over them.
+- `core:fs-testing` lets the data layer test against `InMemoryProvider` without `core:testing`:
+  `core:jobs` and `core:data` may declare it as `testImplementation` (and only that). It depends on
+  `core:model` and `core:fs` and nothing else, so it never loops with them. `core:fs` may not use
+  it, because `core:fs-testing` is built on `core:fs`; when `LocalProvider` runs the contract
+  suite, that test lives where both are on the classpath, and this rule is revisited then.
 - `core:domain`, `core:fs`, `core:jobs`, `core:data` and `core:mvi` have no Compose dependency. They are
   tested on the JVM. `core:domain` is an Android library module (its dependencies are), but its
   own code imports nothing from `android.*`.
@@ -287,8 +293,19 @@ interface ScratchFile : AutoCloseable {   // close() deletes the file
   Trash.
 - **Threading**: providers are `suspend` and run their blocking work on an injected
   `IoDispatcher`.
-- **Test double**: `InMemoryProvider` in `core:testing`. Every `core:jobs` and use-case test
-  runs on it. It can act as name-addressed or `idAddressed`, so both identity rules are tested.
+- **Test double**: `InMemoryProvider` in `core:fs-testing` (re-exported by `core:testing`). Every
+  `core:jobs` and use-case test runs on it. It can act as name-addressed or `idAddressed`, can be
+  case-insensitive, can fail or stall any call on demand, and reports free space, so both identity
+  rules and the error paths are tested. `FileSystemProviderContract`, in the same module, is the
+  suite every provider subclasses (`InMemoryProvider` today; the local and SAF providers once their
+  tests have a module that may use `core:fs-testing`, see §2); it pins that `rename`, `move`, `copy`
+  and `openWrite(Create)` onto a taken name return `AlreadyExists` and change nothing. The fake keeps
+  names unique in a folder even when `idAddressed` (only a seeded listing may repeat a name), so
+  one contract covers both identity rules; a cloud provider's own tests cover two files with one
+  name. Faults also cover streams (`failNextStream`: a read, write or close that throws).
+- **Streams**: `Source` and `Sink` are `java.io.InputStream` and `OutputStream`. `Sink.close()`
+  returns only after the bytes are synced to storage, so a job may rename its temp file to the final
+  name right after it.
 
 Known limit: Android 11+ blocks `Android/data` and `Android/obb` for every app, even with
 all-files access. The browser shows these folders as locked, with a short explanation.
