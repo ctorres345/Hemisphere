@@ -67,8 +67,9 @@ internal fun EntryList(
     val keys = remember(tab.listing.entries) { rowKeys(tab.listing.entries) }
     val focusAnchor = remember { FocusRequester() }
     RestoreAnchor(tab, keys, listState, focusAnchor)
+    // TabContent already keys EntryList on the folder; tab.folder here keeps `from` right without that.
     val onOpen: (Int) -> Unit =
-        remember(tab.listing.entries, keys, listState, onIntent) {
+        remember(tab.folder, tab.listing.entries, keys, listState, onIntent) {
             { index ->
                 // The first visible entry row; the error row above the entries is not one.
                 val first = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key != ERROR_ROW_KEY }
@@ -83,6 +84,7 @@ internal fun EntryList(
                 onIntent(
                     PaneIntent.OpenEntry(
                         entry = tab.listing.entries[index],
+                        from = tab.folder,
                         leaving =
                             ScrollAnchor(
                                 focusedRow = keys[index],

@@ -8,11 +8,13 @@ import io.github.ctorres345.hemisphere.core.model.Listing
 /** What the user can do in one pane. Wrapped in `BrowserIntent.Pane` (architecture §6.1). */
 sealed interface PaneIntent {
     /**
-     * Open [entry] from the open folder. A folder opens; a file does nothing yet (HEM-68).
-     * [leaving] is where the user was in the folder they leave, restored when they come back.
+     * Open [entry], a row of [from]'s listing. A folder opens; a file does nothing yet (HEM-68).
+     * Dropped unless [from] is still the open folder. [leaving] is where the user was in the folder
+     * they leave, restored when they come back.
      */
     data class OpenEntry(
         val entry: Entry,
+        val from: FsPath,
         val leaving: ScrollAnchor?,
     ) : PaneIntent
 

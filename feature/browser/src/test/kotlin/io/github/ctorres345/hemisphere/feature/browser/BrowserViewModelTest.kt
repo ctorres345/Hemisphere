@@ -68,9 +68,60 @@ class BrowserViewModelTest : BrowserViewModelFixture() {
                 viewModel.tab.listing.entries
                     .first()
 
-            viewModel.send(PaneIntent.OpenEntry(row, leaving = null))
-            viewModel.send(PaneIntent.OpenEntry(row, leaving = null))
+            viewModel.send(PaneIntent.OpenEntry(row, from = home, leaving = null))
+            viewModel.send(PaneIntent.OpenEntry(row, from = home, leaving = null))
 
             assertEquals(listOf(home, music), viewModel.tab.backStack)
+        }
+
+    @Test
+    fun `a double tap on a folder whose child has the same name opens the folder only`() =
+        runTest(main.dispatcher) {
+            val a = home.child("a")
+            provider.addFolder(home, folder("a"))
+            provider.addFolder(a, folder("a"))
+            provider.addFolder(a.child("a"))
+            val viewModel = viewModel()
+            val row =
+                viewModel.tab.listing.entries
+                    .first()
+
+            viewModel.send(PaneIntent.OpenEntry(row, from = home, leaving = null))
+            viewModel.send(PaneIntent.OpenEntry(row, from = home, leaving = null))
+
+            assertEquals(listOf(home, a), viewModel.tab.backStack)
+        }
+
+    @Test
+    fun `a folder inside a same-named folder opens from its own listing`() =
+        runTest(main.dispatcher) {
+            val a = home.child("a")
+            provider.addFolder(home, folder("a"))
+            provider.addFolder(a, folder("a"))
+            provider.addFolder(a.child("a"))
+            val viewModel = viewModel()
+
+            viewModel.open("a")
+            viewModel.open("a")
+
+            assertEquals(listOf(home, a, a.child("a")), viewModel.tab.backStack)
+        }
+
+    @Test
+    fun `a stale tap from the folder just left is dropped`() =
+        runTest(main.dispatcher) {
+            val a = home.child("a")
+            provider.addFolder(home, folder("a"))
+            provider.addFolder(a, folder("a"))
+            provider.addFolder(a.child("a"))
+            val viewModel = viewModel()
+            val row =
+                viewModel.tab.listing.entries
+                    .first()
+            viewModel.open("a")
+
+            viewModel.send(PaneIntent.OpenEntry(row, from = home, leaving = null))
+
+            assertEquals(listOf(home, a), viewModel.tab.backStack)
         }
 }
