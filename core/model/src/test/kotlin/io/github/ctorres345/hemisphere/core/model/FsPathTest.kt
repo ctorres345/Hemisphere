@@ -26,4 +26,17 @@ class FsPathTest {
     fun `the root has no name`() {
         assertNull(FsPath.root(volume).name)
     }
+
+    @Test
+    fun `child keeps caseInsensitive from its parent`() {
+        assertEquals(
+            true,
+            FsPath
+                .root(volume, true)
+                .child("a")
+                .child("b")
+                .caseInsensitive,
+        )
+        assertEquals(false, FsPath.root(volume).child("a").caseInsensitive)
+    }
 }
