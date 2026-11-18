@@ -5,9 +5,6 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.border
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -25,7 +22,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -36,12 +32,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.ctorres345.hemisphere.core.designsystem.FocusRingPlacement
 import io.github.ctorres345.hemisphere.core.designsystem.HemisphereShapes
 import io.github.ctorres345.hemisphere.core.designsystem.HemisphereSizes
 import io.github.ctorres345.hemisphere.core.designsystem.HemisphereSpacing
 import io.github.ctorres345.hemisphere.core.designsystem.HemisphereTheme
 import io.github.ctorres345.hemisphere.core.designsystem.ThemeStyle
 import io.github.ctorres345.hemisphere.core.designsystem.ThemeStylePreviews
+import io.github.ctorres345.hemisphere.core.designsystem.focusRing
 import io.github.ctorres345.hemisphere.core.model.StorageAccessState
 import io.github.ctorres345.hemisphere.feature.browser.R
 
@@ -115,14 +113,11 @@ fun AccessScreen(
                 color = HemisphereTheme.colors.textPrimary,
                 textAlign = TextAlign.Center,
             )
-            val grantInteraction = remember { MutableInteractionSource() }
-            val pickInteraction = remember { MutableInteractionSource() }
-            val focusRing = BorderStroke(HemisphereSizes.border * 2, HemisphereTheme.colors.accent.focus)
             // The one primary action: the accent fill.
             Button(
                 onClick = { onIntent(AccessIntent.GrantClicked) },
-                modifier = Modifier.focusOutline(grantInteraction.collectIsFocusedAsState().value, focusRing),
-                interactionSource = grantInteraction,
+                // Outside: the ring sits past the accent fill with a gap, so focus never blends with it.
+                modifier = Modifier.focusRing(placement = FocusRingPlacement.Outside),
                 shape = HemisphereShapes.row,
                 colors =
                     ButtonDefaults.buttonColors(
@@ -136,8 +131,7 @@ fun AccessScreen(
             OutlinedButton(
                 // A placeholder: the SAF fallback (HEM-41) gives this its folder picker.
                 onClick = { onIntent(AccessIntent.PickFolderClicked) },
-                modifier = Modifier.focusOutline(pickInteraction.collectIsFocusedAsState().value, focusRing),
-                interactionSource = pickInteraction,
+                modifier = Modifier.focusRing(placement = FocusRingPlacement.Outside),
                 shape = HemisphereShapes.row,
                 border = BorderStroke(HemisphereSizes.border, HemisphereTheme.colors.borderStrong),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = HemisphereTheme.colors.textSecondary),
@@ -148,17 +142,6 @@ fun AccessScreen(
         }
     }
 }
-
-/**
- * A visible focus state for D-pad and gamepad users (design §3): an `accent.focus` outline with a gap of
- * the ring's width, so it reads against the accent fill (today `accent.focus` is `accent.fill`). The space
- * is always reserved, so focus never moves the layout. Replace with the shared `Modifier.focusRing` from
- * `core:designsystem` once HEM-33 is in.
- */
-private fun Modifier.focusOutline(
-    focused: Boolean,
-    ring: BorderStroke,
-): Modifier = (if (focused) border(ring, HemisphereShapes.row) else this).padding(ring.width * 2)
 
 @Composable
 private fun AccessPreview(

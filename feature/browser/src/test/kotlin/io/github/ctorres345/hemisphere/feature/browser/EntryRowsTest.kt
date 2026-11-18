@@ -5,7 +5,12 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.Composable
 import io.github.ctorres345.hemisphere.core.fs.testing.file
 import io.github.ctorres345.hemisphere.core.fs.testing.folder
+import io.github.ctorres345.hemisphere.core.model.Entry
 import io.github.ctorres345.hemisphere.core.model.FsError
+import io.github.ctorres345.hemisphere.core.model.FsPath
+import io.github.ctorres345.hemisphere.core.model.Listing
+import io.github.ctorres345.hemisphere.core.model.VolumeId
+import io.github.ctorres345.hemisphere.feature.browser.pane.TabState
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -39,11 +44,18 @@ class EntryRowsTest {
         ): Unit = error("not used")
     }
 
-    private fun keysFor(state: BrowserUiState): List<Any?> = RecordingScope().apply { entryRows(state) {} }.keys
+    private fun keysFor(
+        entries: List<Entry>,
+        error: FsError? = null,
+    ): List<Any?> {
+        val tab =
+            TabState(backStack = listOf(FsPath.root(VolumeId("v"))), listing = Listing(entries, complete = true, error))
+        return RecordingScope().apply { entryRows(tab) }.keys
+    }
 
     @Test
     fun `a listing with two equal names gets a row for each with its own key`() {
-        val keys = keysFor(BrowserUiState(entries = listOf(file("a.txt"), file("a.txt"), folder("a.txt"))))
+        val keys = keysFor(listOf(file("a.txt"), file("a.txt"), folder("a.txt")))
 
         assertEquals(3, keys.size)
         assertEquals(3, keys.filterNotNull().toSet().size)
@@ -51,9 +63,7 @@ class EntryRowsTest {
 
     @Test
     fun `the error row never shares a key with an entry`() {
-        val state = BrowserUiState(entries = listOf(file("error-row"), file("error-row")), error = FsError.Io(null))
-
-        val keys = keysFor(state)
+        val keys = keysFor(listOf(file("error-row"), file("error-row")), FsError.Io(null))
 
         assertEquals(3, keys.size)
         assertEquals(3, keys.filterNotNull().toSet().size)

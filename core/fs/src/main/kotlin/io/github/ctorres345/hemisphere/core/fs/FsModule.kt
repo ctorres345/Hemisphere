@@ -1,6 +1,7 @@
 package io.github.ctorres345.hemisphere.core.fs
 
 import android.content.Context
+import android.os.Build
 import android.os.Environment
 import dagger.Module
 import dagger.Provides
@@ -22,6 +23,10 @@ object FsModule {
     fun storageAccess(
         @ApplicationContext context: Context,
     ): StorageAccess = AndroidStorageAccess(context)
+
+    @Provides
+    @Singleton
+    fun lockedFolders(): LockedFolders = LockedFolders(Build.VERSION.SDK_INT)
 
     @Provides
     @Singleton
