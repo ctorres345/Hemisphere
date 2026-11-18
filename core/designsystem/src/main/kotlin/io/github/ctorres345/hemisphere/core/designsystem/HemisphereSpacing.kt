@@ -44,4 +44,7 @@ object HemisphereSizes {
 
     /** The outline of a hint glyph (prototype `.gl` border). */
     val hintGlyphBorder: Dp = ThemeTokens.sizeHintGlyphBorder
+
+    /** Window width from which Auto shows two panes; narrower windows use phone spacing. */
+    val dualMinWidth: Dp = ThemeTokens.sizeDualMinWidth
 }

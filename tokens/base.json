@@ -227,6 +227,13 @@
         "unit": "px"
       },
       "$description": "Outline width of a hint glyph (prototype .gl border)."
+    },
+    "dualMinWidth": {
+      "$value": {
+        "value": 600,
+        "unit": "px"
+      },
+      "$description": "Window width from which Auto layout shows two panes (design-system §2). Narrower windows use phone spacing, such as the hint footer's m gap (prototype .dev[data-d=phone] .hints)."
     }
   }
 }

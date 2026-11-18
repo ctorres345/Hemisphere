@@ -19,8 +19,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
@@ -42,6 +45,13 @@ fun ButtonHintFooter(
 ) {
     if (LocalInputMode.current != InputMode.Gamepad) return
     val colors = HemisphereTheme.colors
+    // Phone widths use the tighter m spacing, two-pane widths l (prototype .hints).
+    val windowWidth =
+        with(LocalDensity.current) {
+            LocalWindowInfo.current.containerSize.width
+                .toDp()
+        }
+    val gap = if (windowWidth < HemisphereSizes.dualMinWidth) HemisphereSpacing.m else HemisphereSpacing.l
     Column(modifier.fillMaxWidth().background(colors.surfaceRaised)) {
         HorizontalDivider(thickness = HemisphereSizes.border, color = colors.borderDefault)
         Row(
@@ -49,8 +59,9 @@ fun ButtonHintFooter(
                 Modifier
                     .fillMaxWidth()
                     .height(HemisphereSizes.hintFooter)
-                    .padding(horizontal = HemisphereSpacing.l),
-            horizontalArrangement = Arrangement.spacedBy(HemisphereSpacing.l),
+                    .clipToBounds()
+                    .padding(horizontal = gap),
+            horizontalArrangement = Arrangement.spacedBy(gap),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             faceHints(layout).forEach { (glyph, label) -> Hint(glyph = { Glyph(glyph, CircleShape) }, label = label) }
@@ -100,6 +111,8 @@ private fun Hint(
             stringResource(label),
             style = HemisphereTheme.typography.meta,
             color = HemisphereTheme.colors.textSecondary,
+            maxLines = 1,
+            softWrap = false,
         )
     }
 }
@@ -121,6 +134,8 @@ private fun Glyph(
             text = text,
             style = HemisphereTheme.typography.caption.copy(fontWeight = HemisphereTheme.typography.heading.fontWeight),
             color = HemisphereTheme.colors.textPrimary,
+            maxLines = 1,
+            softWrap = false,
         )
     }
 }

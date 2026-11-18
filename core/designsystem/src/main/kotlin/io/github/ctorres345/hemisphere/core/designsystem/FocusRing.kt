@@ -23,6 +23,9 @@ import androidx.compose.ui.platform.InspectorInfo
  * target's focus.
  *
  * `accent.focus` keeps 3:1 against every surface in every theme and accent (`tools/contrast`).
+ *
+ * [FocusRingPlacement.Outside] draws past the element's bounds, so its container needs room for
+ * `focusRingGap + focusRing` (4dp) on each side, or a clipping parent cuts the ring off.
  */
 fun Modifier.focusRing(
     shape: Shape = HemisphereShapes.row,
@@ -68,6 +71,9 @@ private class FocusRingNode(
         drawContent()
         if (!focused || currentValueOf(LocalInputMode) != InputMode.Gamepad) return
         val stroke = HemisphereSizes.focusRing.toPx()
+        // An element smaller than the stroke (one collapsing in an animation) has no room for an
+        // inside ring, and a negative outline size would make the shape throw.
+        if (placement == FocusRingPlacement.Inside && size.minDimension <= stroke) return
         // How far the ring's center line sits from the element's edge: inward for Inside, outward past the gap.
         val grow =
             when (placement) {
