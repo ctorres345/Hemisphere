@@ -29,3 +29,11 @@ internal fun Map<EntryKey, ScrollAnchor>.keptFor(backStack: List<FsPath>): Map<E
     val onStack = backStack.mapTo(HashSet()) { it.key }
     return filterKeys { it in onStack }
 }
+
+/** Each anchor with the stack index of its folder, oldest first. A folder twice on the stack uses its lowest index. */
+internal fun Map<EntryKey, ScrollAnchor>.byLevel(stack: List<FsPath>): List<Pair<Int, ScrollAnchor>> {
+    if (isEmpty()) return emptyList()
+    val firstIndex = HashMap<EntryKey, Int>()
+    stack.forEachIndexed { i, path -> firstIndex.putIfAbsent(path.key, i) }
+    return mapNotNull { (key, anchor) -> firstIndex[key]?.let { it to anchor } }.sortedBy { it.first }
+}
