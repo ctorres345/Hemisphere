@@ -63,3 +63,13 @@ jobs:
       # The same command as [check] in .nousfx/project.toml, which the review gate runs.
       - name: Run tests and lint
         run: ./gradlew check --console=plain
+
+      # On a screenshot mismatch, the expected, actual and diff images help decide: fix or re-record.
+      - name: Upload screenshot diffs
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: roborazzi-diffs
+          path: '**/build/outputs/roborazzi/'
+          if-no-files-found: ignore
+          retention-days: 7
