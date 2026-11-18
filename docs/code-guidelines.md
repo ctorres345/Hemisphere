@@ -107,7 +107,7 @@ anything a linter can check is left to the linter and listed only once here.
 | Rule | From | Checked by |
 | --- | --- | --- |
 | Every reducer has plain JUnit tests; every use case and ViewModel has JVM tests with fakes (`InMemoryProvider`, fake `JobQueue`, fake repositories) and `runTest`. No mocking library for our own types. | arch §10 | `./gradlew test` in CI |
-| `core:fs` and `core:jobs` have JVM tests using `InMemoryProvider` and `runTest`. Fakes live in `core:testing`, used only from test source sets. | arch §10 | `./gradlew test` in CI |
+| `core:fs` and `core:jobs` have JVM tests using `InMemoryProvider` and `runTest`. Fakes live in `core:testing` and `core:fs-testing` (`InMemoryProvider`, the provider contract suite), used only from test source sets; the data layer takes `core:fs-testing` directly. | arch §10 | `./gradlew test` in CI |
 | Equality, selection, conflict checks and database lookups use `EntryKey`, never the path's string form. | arch §3 | Review, `core:model` tests |
 | Each shared component has a Roborazzi test in light, dark and AMOLED; phone and handheld; touch and gamepad. | design §11 | Roborazzi in CI |
 | A bug fix starts with a failing test that shows the bug. | arch §10 | Review |

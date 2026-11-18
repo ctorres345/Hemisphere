@@ -6,6 +6,7 @@
 internal object ModuleGraphRules {
     private const val MODEL = ":core:model"
     private const val TESTING = ":core:testing"
+    private const val FS_TESTING = ":core:fs-testing"
     private val dataLayer = setOf(":core:fs", ":core:jobs", ":core:data")
     private const val MVI = ":core:mvi"
     private val featureDeps = setOf(":core:domain", ":core:designsystem", ":core:input", ":core:platform", MVI)
@@ -21,9 +22,10 @@ internal object ModuleGraphRules {
             MVI to emptySet(),
             ":core:domain" to setOf(MODEL) + dataLayer,
             ":core:fs" to setOf(MODEL, ":core:platform"),
-            ":core:jobs" to setOf(MODEL, ":core:fs", ":core:data"),
-            ":core:data" to setOf(MODEL, ":core:fs"),
-            TESTING to setOf(MODEL) + dataLayer,
+            ":core:jobs" to setOf(MODEL, ":core:fs", ":core:data", FS_TESTING),
+            ":core:data" to setOf(MODEL, ":core:fs", FS_TESTING),
+            FS_TESTING to setOf(MODEL, ":core:fs"),
+            TESTING to setOf(MODEL, FS_TESTING) + dataLayer,
             ":feature:browser" to featureDeps,
             ":feature:jobs" to featureDeps - ":core:platform",
             ":feature:settings" to featureDeps - ":core:platform",
@@ -31,7 +33,7 @@ internal object ModuleGraphRules {
         )
 
     /**
-     * `core:testing` and every module it is built from. The convention plugins add `core:testing` to
+     * `core:testing` and every module it is built from (`core:fs-testing` is one). The convention plugins add `core:testing` to
      * every other module's tests; adding it here would put a module's own classes on its test
      * classpath twice, or make `core:testing` depend on itself.
      */
@@ -41,7 +43,7 @@ internal object ModuleGraphRules {
         }.last()
 
     /** Modules that must stay free of Compose (architecture §2) and are tested on the JVM. */
-    val noCompose = setOf(MODEL, ":core:domain", MVI) + dataLayer
+    val noCompose = setOf(MODEL, ":core:domain", MVI, FS_TESTING) + dataLayer
 
     /** `core:domain` exposes only `core:model` as `api`, so the data layer stays off a feature's classpath. */
     private val apiOnly = mapOf(":core:domain" to setOf(MODEL))
@@ -57,14 +59,15 @@ internal object ModuleGraphRules {
      * The edges §2 requires. The table's "Depends on" column lists what a module may use, so a
      * module that does not use a listed module yet is fine; these come from the rules under it:
      * every data-layer module, `core:platform` and `core:domain` expose `core:model` as `api`;
-     * `core:domain` takes the data layer as `implementation`; `core:testing` exposes it as `api`.
+     * `core:domain` takes the data layer as `implementation`; `core:testing` exposes it, and
+     * `core:fs-testing`, as `api`.
      * A module added to `dataLayer` therefore needs those edges in the same PR. Only the plain
      * configuration counts: `debugApi` or `compileOnly` does not meet the rule.
      */
     val required: Set<Required> =
         (dataLayer + ":core:platform" + ":core:domain").map { Required(it, Scope.API, MODEL) }.toSet() +
             dataLayer.map { Required(":core:domain", Scope.IMPLEMENTATION, it) } +
-            dataLayer.map { Required(TESTING, Scope.API, it) }
+            (dataLayer + FS_TESTING).map { Required(TESTING, Scope.API, it) }
 
     /**
      * The scope of a declarable configuration such as `implementation`, `debugApi` or `testImplementation`,
@@ -103,6 +106,8 @@ internal object ModuleGraphRules {
                 edge.to == TESTING && edge.from in withoutSharedTesting ->
                     errors += "$where: core:testing is built from ${edge.from}, so its tests cannot use it."
                 edge.to == TESTING -> Unit
+                edge.to == FS_TESTING && edge.scope != Scope.TEST && edge.from != TESTING ->
+                    errors += "$where: core:fs-testing is for test source sets only (testImplementation); only core:testing re-exports it."
                 rule != null && edge.to !in rule ->
                     errors += "$where: not allowed by docs/architecture.md §2."
                 edge.scope == Scope.API && apiOnly[edge.from]?.contains(edge.to) == false ->

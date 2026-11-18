@@ -4,6 +4,7 @@ import com.lemonappdev.konsist.api.Konsist
 import com.lemonappdev.konsist.api.ext.list.withNameEndingWith
 import com.lemonappdev.konsist.api.verify.assertFalse
 import com.lemonappdev.konsist.api.verify.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
@@ -20,6 +21,21 @@ class LayerRulesTest {
     fun `core domain imports nothing from android or Compose`() {
         domain.files.assertFalse(strict = false) { file ->
             file.imports.any { it.name.startsWith("android.") || it.name.startsWith("androidx.compose.") }
+        }
+    }
+
+    @Test
+    fun `the file-system provider interfaces use no Android types`() {
+        val contract = production.files.filter { "/core/fs/src/main/" in it.path && it.name in providerContractFiles }
+        assertEquals(providerContractFiles, contract.map { it.name }.toSet())
+        contract.assertFalse(strict = false) { file ->
+            file.imports.any { it.name.startsWith("android.") || it.name.startsWith("androidx.") } ||
+                androidName.containsMatchIn(
+                    file.text
+                        .lines()
+                        .filterNot { it.trimStart().startsWith("*") }
+                        .joinToString("\n"),
+                )
         }
     }
 
@@ -118,6 +134,12 @@ class LayerRulesTest {
         }
 
     private companion object {
+        /** These stay plain Kotlin (ADR 0006); `ShareUriProvider` is the Android side. */
+        val providerContractFiles = setOf("FileSystemProvider", "Streams", "VolumeRepository")
+
+        /** A fully qualified Android name in code (KDoc lines are skipped), which imports alone would miss. */
+        val androidName = Regex("""\bandroidx?\.[a-z]""")
+
         /** Hand wiring, or plain `viewModel()`, which cannot build an `@HiltViewModel` and crashes at runtime. */
         val handWiredViewModelImports =
             setOf("androidx.lifecycle.viewmodel.viewModelFactory", "androidx.lifecycle.viewmodel.compose.viewModel")

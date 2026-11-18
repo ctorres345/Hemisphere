@@ -1,13 +1,13 @@
 package io.github.ctorres345.hemisphere.feature.browser
 
+import io.github.ctorres345.hemisphere.core.fs.testing.InMemoryProvider
+import io.github.ctorres345.hemisphere.core.fs.testing.file
+import io.github.ctorres345.hemisphere.core.fs.testing.folder
 import io.github.ctorres345.hemisphere.core.model.Entry
 import io.github.ctorres345.hemisphere.core.model.FsPath
 import io.github.ctorres345.hemisphere.core.model.FsResult
 import io.github.ctorres345.hemisphere.core.model.ProviderRef
 import io.github.ctorres345.hemisphere.core.model.VolumeId
-import io.github.ctorres345.hemisphere.core.testing.InMemoryProvider
-import io.github.ctorres345.hemisphere.core.testing.file
-import io.github.ctorres345.hemisphere.core.testing.folder
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals

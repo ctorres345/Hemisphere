@@ -1,0 +1,14 @@
+# core:fs-testing holds test code in its main source set: the contract suite has one backtick-named
+# @Test per rule, and the fake implements all of FileSystemProvider.
+naming:
+  FunctionNaming:
+    ignoreAnnotated: ['Test']
+
+complexity:
+  TooManyFunctions:
+    active: false
+
+# Test data (sizes, byte counts) reads better inline than as named constants.
+style:
+  MagicNumber:
+    active: false

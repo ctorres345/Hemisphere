@@ -6,6 +6,8 @@ import io.github.ctorres345.hemisphere.core.model.FsPath
 import io.github.ctorres345.hemisphere.core.model.FsResult
 import io.github.ctorres345.hemisphere.core.model.StorageAccessState
 import io.github.ctorres345.hemisphere.core.model.VolumeId
+import io.github.ctorres345.hemisphere.core.model.VolumeLimits
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -75,5 +77,27 @@ class VolumeRepositoryTest {
             val repo = repository(TestStorageAccess(StorageAccessState.Granted))
 
             assertEquals(FsResult.Err(FsError.VolumeUnavailable), repo.providerFor(VolumeId("sd")))
+        }
+
+    @Test
+    fun `observeVolumes lists app files, and internal storage once access is granted`() =
+        runTest {
+            val access = TestStorageAccess(StorageAccessState.Denied)
+            val repo = repository(access)
+
+            assertEquals(listOf(AppHomeVolume), repo.observeVolumes().first().map { it.id })
+
+            access.set(StorageAccessState.Granted)
+            assertEquals(listOf(PrimaryVolume, AppHomeVolume), repo.observeVolumes().first().map { it.id })
+        }
+
+    @Test
+    fun `limitsFor knows the app's volumes and nothing else`() =
+        runTest {
+            val repo = repository(TestStorageAccess(StorageAccessState.Granted))
+
+            assertEquals(FsResult.Ok(VolumeLimits.NONE), repo.limitsFor(PrimaryVolume))
+            assertEquals(FsResult.Ok(VolumeLimits.NONE), repo.limitsFor(AppHomeVolume))
+            assertEquals(FsResult.Err(FsError.VolumeUnavailable), repo.limitsFor(VolumeId("sd")))
         }
 }

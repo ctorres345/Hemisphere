@@ -1,5 +1,6 @@
 package io.github.ctorres345.hemisphere.core.fs
 
+import io.github.ctorres345.hemisphere.core.model.Capabilities
 import io.github.ctorres345.hemisphere.core.model.Entry
 import io.github.ctorres345.hemisphere.core.model.FsError
 import io.github.ctorres345.hemisphere.core.model.FsPath
@@ -19,6 +20,7 @@ import java.nio.file.AccessDeniedException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.attribute.BasicFileAttributes
+import java.time.Instant
 
 class LocalProviderTest {
     @get:Rule
@@ -55,6 +57,27 @@ class LocalProviderTest {
 
     // The provider's dispatcher must share runTest's scheduler, or its work never runs.
     private fun test(block: suspend TestScope.() -> Unit) = runTest(dispatcher) { block() }
+
+    @Test
+    fun `every call beyond list is Unsupported until the local-storage ticket, and capabilities are none`() =
+        test {
+            val local = provider()
+            val path = FsPath.root(volume).child("a.txt")
+            val unsupported = FsResult.Err(FsError.Unsupported)
+
+            assertEquals(Capabilities.NONE, local.capabilities)
+            assertEquals(unsupported, local.stat(path))
+            assertEquals(unsupported, local.openRead(path))
+            assertEquals(unsupported, local.openWrite(path, WriteMode.Create))
+            assertEquals(unsupported, local.createDirectory(path))
+            assertEquals(unsupported, local.rename(path, "b.txt"))
+            assertEquals(unsupported, local.move(path, path.child("b")))
+            assertEquals(unsupported, local.copy(path, path.child("b")))
+            assertEquals(unsupported, local.setTimes(path, Instant.EPOCH))
+            assertEquals(unsupported, local.freeSpace(volume))
+            assertEquals(unsupported, local.delete(path))
+            assertEquals(emptyList<Unit>(), local.observe(path).toList())
+        }
 
     @Test
     fun `lists folders and files with their kind and size`() =

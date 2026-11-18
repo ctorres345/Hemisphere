@@ -1,5 +1,6 @@
 package io.github.ctorres345.hemisphere.core.fs
 
+import io.github.ctorres345.hemisphere.core.model.Capabilities
 import io.github.ctorres345.hemisphere.core.model.Entry
 import io.github.ctorres345.hemisphere.core.model.FsError
 import io.github.ctorres345.hemisphere.core.model.FsPath
@@ -10,6 +11,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import java.io.File
@@ -60,6 +62,9 @@ internal object DefaultAttributeReader : AttributeReader {
  * first rows of a big folder show before the rest is read. Each entry's attributes are read once
  * (a link twice: itself, then its target). An entry deleted while the folder is read is skipped;
  * one whose attributes cannot be read is listed without size or date.
+ *
+ * Only [list] works so far: every other call returns [FsError.Unsupported] and [capabilities] is
+ * [Capabilities.NONE], until the local-storage ticket writes them.
  */
 internal class LocalProvider(
     private val roots: Map<VolumeId, File>,
@@ -70,6 +75,51 @@ internal class LocalProvider(
     init {
         require(batchSize > 0) { "batchSize must be positive" }
     }
+
+    override val capabilities: Capabilities = Capabilities.NONE
+
+    override suspend fun stat(path: FsPath): FsResult<Entry> = unsupported()
+
+    override suspend fun openRead(
+        path: FsPath,
+        offset: Long,
+    ): FsResult<Source> = unsupported()
+
+    override suspend fun openWrite(
+        path: FsPath,
+        mode: WriteMode,
+        sizeHint: Long?,
+    ): FsResult<Sink> = unsupported()
+
+    override suspend fun createDirectory(path: FsPath): FsResult<Entry> = unsupported()
+
+    override suspend fun rename(
+        path: FsPath,
+        newName: String,
+    ): FsResult<Entry> = unsupported()
+
+    override suspend fun move(
+        from: FsPath,
+        to: FsPath,
+    ): FsResult<Entry> = unsupported()
+
+    override suspend fun copy(
+        from: FsPath,
+        to: FsPath,
+    ): FsResult<Entry> = unsupported()
+
+    override suspend fun setTimes(
+        path: FsPath,
+        modified: Instant,
+    ): FsResult<Unit> = unsupported()
+
+    override suspend fun freeSpace(volume: VolumeId): FsResult<Long?> = unsupported()
+
+    override suspend fun delete(path: FsPath): FsResult<Unit> = unsupported()
+
+    override fun observe(dir: FsPath): Flow<Unit> = emptyFlow()
+
+    private fun unsupported(): FsResult.Err = FsResult.Err(FsError.Unsupported)
 
     override fun list(dir: FsPath): Flow<FsResult<List<Entry>>> =
         flow {
