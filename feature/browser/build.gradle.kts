@@ -25,5 +25,16 @@ dependencies {
     testImplementation(libs.compose.ui.test.junit4)
 }
 
-// `check` (CI and the review gate) compares every screenshot test with its golden image.
-tasks.named("check") { dependsOn("verifyRoborazziDebug") }
+// The golden images are test inputs, so changing one re-runs the tests instead of reusing a cached result.
+tasks.withType<Test>().configureEach {
+    inputs
+        .files(fileTree("src/test/screenshots"))
+        .withPropertyName("screenshotGoldens")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+}
+
+// The goldens are Linux renders, recorded by CI (see BrowserScreenshotTest). macOS draws text a few pixels
+// differently, so `check` compares them only on Linux, which is where CI's gradle-check runs.
+if (System.getProperty("os.name").startsWith("Linux")) {
+    tasks.named("check") { dependsOn("verifyRoborazziDebug") }
+}

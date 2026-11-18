@@ -17,8 +17,14 @@ import org.robolectric.annotation.GraphicsMode
 /**
  * Golden images of every Browser state, in each theme, on a phone and a handheld.
  *
- * Record after an intended UI change: `./gradlew recordRoborazziDebug`, then commit the images in
- * `src/test/screenshots/`. CI runs `./gradlew verifyRoborazziDebug`, which fails on any difference.
+ * The goldens in `src/test/screenshots/` are Linux renders. macOS and Windows draw text a few pixels
+ * differently, so never commit images recorded there. CI's `gradle-check` (`./gradlew check` on Linux)
+ * compares every image exactly and fails on any difference; on failure it uploads the expected, actual and
+ * diff images as the `roborazzi-diffs` artifact.
+ *
+ * After an intended UI change, re-record on Linux: run the `android` workflow by hand on the branch with
+ * `record-screenshots` ticked, download its `screenshot-goldens` artifact, and commit its images over
+ * `src/test/screenshots/`. On a Linux machine, `./gradlew recordRoborazziDebug` does the same.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
