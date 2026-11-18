@@ -6,6 +6,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -42,6 +43,9 @@ import io.github.ctorres345.hemisphere.feature.browser.TabContent
 import io.github.ctorres345.hemisphere.feature.browser.pane.PaneId
 import io.github.ctorres345.hemisphere.feature.browser.pane.PaneIntent
 import io.github.ctorres345.hemisphere.feature.browser.pane.TabState
+import io.github.ctorres345.hemisphere.feature.browser.selection.PaneSelectionHeader
+import io.github.ctorres345.hemisphere.feature.browser.selection.selecting
+import io.github.ctorres345.hemisphere.feature.browser.selection.selectionSummary
 
 /**
  * The panes on screen: in Single the active pane alone, in Dual both side by side, the left one first
@@ -55,6 +59,8 @@ internal fun Panes(
     modifier: Modifier = Modifier,
 ) {
     val dual = state.shell.layout == PaneLayout.Dual
+    // The active pane's selection row; the other pane keeps the row's height, so the lists line up.
+    val selectionRow = dual && state.panes[state.shell.activePane]?.tab?.selecting == true
     Row(modifier.fillMaxSize()) {
         state.shownPanes.forEachIndexed { index, id ->
             if (index >
@@ -64,16 +70,26 @@ internal fun Panes(
             }
             key(id) {
                 val active = id == state.shell.activePane
-                Pane(id, state.panes.getValue(id).tab, PaneLook(dual, active), onIntent, Modifier.weight(1f))
+                Pane(
+                    id,
+                    state.panes.getValue(id).tab,
+                    PaneLook(dual, active, selectionRow),
+                    onIntent,
+                    Modifier.weight(1f),
+                )
             }
         }
     }
 }
 
-/** How a pane is drawn: with a header in Dual, and stepped down when it is not the active one. */
+/**
+ * How a pane is drawn: with a header in Dual, and stepped down when it is not the active one. While the
+ * active pane is selecting, its header holds a [selectionRow] (prototype `.psel`).
+ */
 private data class PaneLook(
     val dual: Boolean,
     val active: Boolean,
+    val selectionRow: Boolean,
 )
 
 /** One pane: in Dual its header, then its folder. In Dual a touch or focus in it makes it active. */
@@ -111,26 +127,41 @@ private fun Pane(
                 },
     ) {
         // Composed in both layouts (empty in Single), so the content below keeps its place on a switch.
-        if (look.dual) PaneHeader(tab, look.active)
+        // The selection row sits above the folder name, as the prototype's `.psel` above its crumbs.
+        if (look.dual) {
+            PaneHeader(tab, look.active) {
+                when {
+                    !look.selectionRow -> {}
+
+                    look.active -> {
+                        val summary = remember(tab.listing, tab.selection) { tab.selectionSummary() }
+                        PaneSelectionHeader(summary, onPaneIntent)
+                    }
+
+                    else -> {
+                        Spacer(Modifier.height(HemisphereSizes.selectionBar))
+                    }
+                }
+            }
+        }
         SteppedDownText(enabled = !look.active) { TabContent(tab, onPaneIntent, Modifier.weight(1f)) }
     }
 }
 
-/** The pane's folder name; the active pane has the accent bar on top (prototype `.phead`). */
+/**
+ * The pane's header (prototype `.phead`): the accent bar on top in the active pane, then [above] (the
+ * selection row, if any), then the folder name.
+ */
 @Composable
 private fun PaneHeader(
     tab: TabState,
     active: Boolean,
+    above: @Composable () -> Unit,
 ) {
     val colors = HemisphereTheme.colors
     Column(Modifier.fillMaxWidth()) {
-        // The bar's height is kept when inactive, so the headers line up and nothing shifts on a switch.
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(HemisphereSizes.activePaneBar)
-                .then(if (active) Modifier.background(colors.accent.fill) else Modifier),
-        )
+        PaneAccentBar(active)
+        above()
         Box(Modifier.fillMaxWidth().height(HemisphereRowHeight.compact), contentAlignment = Alignment.CenterStart) {
             Text(
                 text = tab.folder.name ?: stringResource(R.string.browser_home),
@@ -142,4 +173,18 @@ private fun PaneHeader(
             )
         }
     }
+}
+
+/**
+ * The bar on top of a Dual pane's header, filled in the active pane (prototype `.pane.active
+ * .phead::before`). Its height is kept when inactive, so the headers line up and nothing shifts on a switch.
+ */
+@Composable
+private fun PaneAccentBar(active: Boolean) {
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(HemisphereSizes.activePaneBar)
+            .then(if (active) Modifier.background(HemisphereTheme.colors.accent.fill) else Modifier),
+    )
 }

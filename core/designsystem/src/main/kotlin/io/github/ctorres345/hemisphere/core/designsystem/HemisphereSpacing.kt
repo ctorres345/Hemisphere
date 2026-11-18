@@ -53,4 +53,28 @@ object HemisphereSizes {
 
     /** The accent bar on top of the active pane's header in Dual (prototype `.pane.active .phead::before`). */
     val activePaneBar: Dp = ThemeTokens.sizeActivePaneBar
+
+    /** A row's selection check while selecting (prototype `.chk`). */
+    val selectionCheck: Dp = ThemeTokens.sizeSelectionCheck
+
+    /** The outline of an unselected row's check (prototype `.chk` border). */
+    val selectionCheckBorder: Dp = ThemeTokens.sizeSelectionCheckBorder
+
+    /** The check mark inside a selected row's check (prototype `.chk svg`). */
+    val checkGlyph: Dp = ThemeTokens.sizeCheckGlyph
+
+    /** The active pane's selection header in Dual (prototype `.psel`). */
+    val selectionBar: Dp = ThemeTokens.sizeSelectionBar
+
+    /** A button in the Dual selection header (prototype `.psel .btn`). */
+    val selectionButton: Dp = ThemeTokens.sizeSelectionButton
+
+    /** An icon inside a text button (prototype `.btn svg`). */
+    val buttonIcon: Dp = ThemeTokens.sizeButtonIcon
+
+    /** One action in the phone's selection action bar (prototype `.act`). */
+    val actionMinWidth: Dp = ThemeTokens.sizeActionMinWidth
+
+    /** The narrowest Dual pane whose selection header labels Copy and Move; below it they are icons only. */
+    val selectionLabelsMinWidth: Dp = ThemeTokens.sizeSelectionLabelsMinWidth
 }

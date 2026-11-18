@@ -22,4 +22,22 @@
     <string name="access_grant">Allow access</string>
     <string name="access_open_settings">Open settings</string>
     <string name="access_pick_folder">Pick a folder instead</string>
+    <plurals name="selection_count">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+    <plurals name="selection_count_size">
+        <item quantity="one">%1$d selected · %2$s</item>
+        <item quantity="other">%1$d selected · %2$s</item>
+    </plurals>
+    <string name="selection_leave">Leave selection</string>
+    <string name="selection_select_all">Select all</string>
+    <string name="selection_copy_to_other">Copy to other pane</string>
+    <string name="selection_move_to_other">Move to other pane</string>
+    <string name="selection_select">Select</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_move">Move</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_rename">Rename</string>
+    <string name="action_more">More</string>
 </resources>

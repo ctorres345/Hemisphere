@@ -11,6 +11,8 @@ import io.github.ctorres345.hemisphere.feature.browser.layout.BrowserWindow
 import io.github.ctorres345.hemisphere.feature.browser.layout.PaneLayout
 import io.github.ctorres345.hemisphere.feature.browser.pane.PaneId
 import io.github.ctorres345.hemisphere.feature.browser.pane.PaneIntent
+import io.github.ctorres345.hemisphere.feature.browser.selection.handlesBack
+import io.github.ctorres345.hemisphere.feature.browser.selection.keyOf
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -223,4 +225,84 @@ class BrowserViewModelTest : BrowserViewModelFixture() {
                     .tab.folder,
             )
         }
+
+    @Test
+    fun `back at the root with a selection clears it and stays in the app`() =
+        runTest(main.dispatcher) {
+            provider.addFolder(home, file("notes.md"), folder("Music"))
+            val viewModel = viewModel()
+            viewModel.longPress("notes.md")
+            assertTrue(viewModel.tab.handlesBack)
+
+            viewModel.send(PaneIntent.Back)
+
+            assertEquals(home, viewModel.tab.folder)
+            assertTrue(viewModel.tab.selection.isEmpty())
+            // Nothing left to clear and no folder to go up to: the system takes the next Back.
+            assertFalse(viewModel.tab.handlesBack)
+        }
+
+    @Test
+    fun `back in a folder clears the selection before going up`() =
+        runTest(main.dispatcher) {
+            provider.addFolder(home, folder("Music"))
+            provider.addFolder(music, file("song.mp3"))
+            val viewModel = viewModel()
+            viewModel.open("Music")
+            viewModel.longPress("song.mp3")
+
+            viewModel.send(PaneIntent.Back)
+            assertEquals(music, viewModel.tab.folder)
+            assertTrue(viewModel.tab.selection.isEmpty())
+
+            viewModel.send(PaneIntent.Back)
+            assertEquals(home, viewModel.tab.folder)
+        }
+
+    @Test
+    fun `while selecting a tap on a folder toggles it instead of opening it`() =
+        runTest(main.dispatcher) {
+            provider.addFolder(home, file("notes.md"), folder("Music"))
+            val viewModel = viewModel()
+            viewModel.longPress("notes.md")
+
+            viewModel.open("Music")
+
+            assertEquals(home, viewModel.tab.folder)
+            assertEquals(2, viewModel.tab.selection.size)
+            assertEquals(1, provider.listCalls)
+        }
+
+    @Test
+    fun `a long-press on a row of a folder already left is dropped`() =
+        runTest(main.dispatcher) {
+            provider.addFolder(home, folder("Music"))
+            provider.addFolder(music, folder("Music"))
+            val viewModel = viewModel()
+            val row =
+                viewModel.tab.listing.entries
+                    .first()
+            viewModel.open("Music")
+
+            viewModel.send(PaneIntent.LongPress(row, from = home))
+
+            assertTrue(viewModel.tab.selection.isEmpty())
+        }
+
+    @Test
+    fun `a file deleted outside the app leaves the selection when the listing refreshes`() =
+        runTest(main.dispatcher) {
+            provider.addFolder(home, file("a.txt"), file("b.txt"))
+            val viewModel = viewModel()
+            viewModel.longPress("a.txt")
+            viewModel.longPress("b.txt")
+
+            provider.addFolder(home, file("b.txt"))
+            viewModel.send(PaneIntent.Retry)
+
+            assertEquals(setOf(viewModel.tab.keyOf(file("b.txt"))), viewModel.tab.selection)
+        }
+
+    private fun BrowserViewModel.longPress(name: String) =
+        send(PaneIntent.LongPress(tab.listing.entries.first { it.name == name }, from = tab.folder))
 }

@@ -248,6 +248,62 @@
         "unit": "px"
       },
       "$description": "Height of the accent bar on top of the active pane's header in Dual (prototype .pane.active .phead::before)."
+    },
+    "selectionCheck": {
+      "$value": {
+        "value": 22,
+        "unit": "px"
+      },
+      "$description": "Diameter of a row's selection check while selecting (prototype .chk)."
+    },
+    "selectionCheckBorder": {
+      "$value": {
+        "value": 2,
+        "unit": "px"
+      },
+      "$description": "Outline width of an unselected row's check (prototype .chk border)."
+    },
+    "checkGlyph": {
+      "$value": {
+        "value": 14,
+        "unit": "px"
+      },
+      "$description": "The check mark inside a selected row's check (prototype .chk svg)."
+    },
+    "selectionBar": {
+      "$value": {
+        "value": 40,
+        "unit": "px"
+      },
+      "$description": "Height of the active pane's selection header in Dual (prototype .psel)."
+    },
+    "selectionButton": {
+      "$value": {
+        "value": 32,
+        "unit": "px"
+      },
+      "$description": "Height of a button in the Dual selection header (prototype .psel .btn)."
+    },
+    "buttonIcon": {
+      "$value": {
+        "value": 18,
+        "unit": "px"
+      },
+      "$description": "Icon size inside a text button (prototype .btn svg)."
+    },
+    "actionMinWidth": {
+      "$value": {
+        "value": 64,
+        "unit": "px"
+      },
+      "$description": "Minimum width of one action in the phone's selection action bar (prototype .act)."
+    },
+    "selectionLabelsMinWidth": {
+      "$value": {
+        "value": 400,
+        "unit": "px"
+      },
+      "$description": "Narrowest Dual pane whose selection header labels Copy and Move; narrower panes (a 640dp handheld) show icons only, so the count keeps its room."
     }
   }
 }

@@ -1,7 +1,10 @@
 package io.github.ctorres345.hemisphere.feature.browser
 
 import android.text.format.Formatter
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
@@ -33,9 +37,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import io.github.ctorres345.hemisphere.core.designsystem.FocusFillRipple
@@ -46,11 +56,19 @@ import io.github.ctorres345.hemisphere.core.designsystem.HemisphereSpacing
 import io.github.ctorres345.hemisphere.core.designsystem.HemisphereTheme
 import io.github.ctorres345.hemisphere.core.designsystem.InputMode
 import io.github.ctorres345.hemisphere.core.designsystem.LocalInputMode
+import io.github.ctorres345.hemisphere.core.designsystem.LocalSteppedDown
 import io.github.ctorres345.hemisphere.core.designsystem.focusRing
 import io.github.ctorres345.hemisphere.core.model.Entry
 import io.github.ctorres345.hemisphere.feature.browser.pane.PaneIntent
 import io.github.ctorres345.hemisphere.feature.browser.pane.ScrollAnchor
 import io.github.ctorres345.hemisphere.feature.browser.pane.TabState
+import io.github.ctorres345.hemisphere.feature.browser.selection.SelectionAction
+import io.github.ctorres345.hemisphere.feature.browser.selection.SelectionCheck
+import io.github.ctorres345.hemisphere.feature.browser.selection.SelectionMenu
+import io.github.ctorres345.hemisphere.feature.browser.selection.dividerStart
+import io.github.ctorres345.hemisphere.feature.browser.selection.keyOf
+import io.github.ctorres345.hemisphere.feature.browser.selection.secondaryClick
+import io.github.ctorres345.hemisphere.feature.browser.selection.selecting
 
 /**
  * The open folder's rows. Opening a folder hands the pane the anchor of the folder being left; when the
@@ -96,6 +114,16 @@ internal fun EntryList(
             }
         }
     // The prototype's .list ends with an s2 gap below the last row.
+    val callbacks =
+        remember(tab.folder, tab.listing.entries, onOpen, onIntent) {
+            RowCallbacks(
+                onOpen = onOpen,
+                onLongPress = { index ->
+                    onIntent(PaneIntent.LongPress(tab.listing.entries[index], from = tab.folder))
+                },
+                onAction = { index, action -> onIntent(PaneIntent.Act(action, entry = tab.listing.entries[index])) },
+            )
+        }
     LazyColumn(
         state = listState,
         modifier = modifier.fillMaxSize(),
@@ -105,7 +133,7 @@ internal fun EntryList(
             tab = tab,
             keys = keys,
             onRetry = { onIntent(PaneIntent.Retry) },
-            onOpen = onOpen,
+            callbacks = callbacks,
             focusAnchor = focusAnchor,
         )
     }
@@ -141,14 +169,22 @@ private fun RestoreAnchor(
     }
 }
 
+/** What a row does on a tap, a long-press and a choice in its menu, by its index in the listing. */
+internal class RowCallbacks(
+    val onOpen: (Int) -> Unit = {},
+    val onLongPress: (Int) -> Unit = {},
+    val onAction: (Int, SelectionAction) -> Unit = { _, _ -> },
+)
+
 /** The list's rows: the error row when a listing failed part-way, then one row per entry. */
 internal fun LazyListScope.entryRows(
     tab: TabState,
     keys: List<String> = rowKeys(tab.listing.entries),
     onRetry: () -> Unit = {},
-    onOpen: (Int) -> Unit = {},
+    callbacks: RowCallbacks = RowCallbacks(),
     focusAnchor: FocusRequester? = null,
 ) {
+    val selecting = tab.selecting
     tab.listing.error?.let { error ->
         item(key = ERROR_ROW_KEY) {
             ErrorMessage(error, onRetry = onRetry, modifier = Modifier.fillMaxWidth())
@@ -165,82 +201,128 @@ internal fun LazyListScope.entryRows(
             } else {
                 Modifier
             }
-        EntryRow(entry, locked = locked, showDivider = index > 0, onClick = { onOpen(index) }, modifier = focus)
+        val look =
+            RowLook(
+                locked = locked,
+                showDivider = index > 0,
+                selecting = selecting,
+                selected = selecting && tab.keyOf(entry) in tab.selection,
+            )
+        EntryRow(entry, look, callbacks.forRow(index), modifier = focus)
     }
 }
+
+/** How one row is drawn. While [selecting], every row shows its check; a [selected] row is tinted. */
+private data class RowLook(
+    val locked: Boolean,
+    val showDivider: Boolean,
+    val selecting: Boolean,
+    val selected: Boolean,
+)
+
+/** One row's callbacks, bound to its index. */
+private class RowHandlers(
+    val onClick: () -> Unit,
+    val onLongClick: () -> Unit,
+    val onAction: (SelectionAction) -> Unit,
+)
+
+private fun RowCallbacks.forRow(index: Int) =
+    RowHandlers(
+        onClick = { onOpen(index) },
+        onLongClick = { onLongPress(index) },
+        onAction = { onAction(index, it) },
+    )
 
 /**
  * One file or folder row, as in the prototype's `.row`: name on the left, size or kind on the right. A
  * folder Android keeps private shows a lock. Rows take focus, with the shared ring, for D-pad users.
+ * A long-press selects; a secondary click (mouse) or the Menu key opens the row's menu.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EntryRow(
     entry: Entry,
-    locked: Boolean,
-    showDivider: Boolean,
-    onClick: () -> Unit,
+    look: RowLook,
+    handlers: RowHandlers,
     modifier: Modifier = Modifier,
 ) {
+    var menu by remember { mutableStateOf(false) }
     CompositionLocalProvider(LocalRippleConfiguration provides FocusFillRipple) {
-        EntryRowContent(entry, locked, showDivider, onClick, modifier)
+        Box(modifier = modifier.fillMaxWidth().padding(horizontal = HemisphereSpacing.xs)) {
+            val onMenu = remember { { menu = true } }
+            EntryRowContent(entry, look, handlers, onMenu)
+            SelectionMenu(expanded = menu, onDismiss = { menu = false }, onAction = handlers.onAction)
+        }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun EntryRowContent(
     entry: Entry,
-    locked: Boolean,
-    showDivider: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
+    look: RowLook,
+    handlers: RowHandlers,
+    onMenu: () -> Unit,
 ) {
-    Box(modifier = modifier.fillMaxWidth().padding(horizontal = HemisphereSpacing.xs)) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .focusRing(fill = true)
-                    // After the ring, so the press highlight is rounded as the prototype's .row:active.
-                    .clip(HemisphereShapes.row)
-                    .clickable(onClick = onClick)
-                    // One screen-reader stop per row (name, then size or kind), as the prototype's aria-label.
-                    .semantics(mergeDescendants = true) { }
-                    .heightIn(min = HemisphereRowHeight.default)
-                    .padding(start = HemisphereSpacing.l, end = HemisphereSpacing.m),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(HemisphereSpacing.m),
-        ) {
+    val colors = HemisphereTheme.colors
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .focusRing(fill = true)
+                // After the ring, so the press highlight is rounded as the prototype's .row:active.
+                .clip(HemisphereShapes.row)
+                .then(if (look.selected) Modifier.background(colors.accent.tint) else Modifier)
+                .secondaryClick(onMenu)
+                .onPreviewKeyEvent { event ->
+                    val menuKey = event.key == Key.Menu && event.type == KeyEventType.KeyUp
+                    if (menuKey) onMenu()
+                    menuKey
+                }.combinedClickable(
+                    onClick = handlers.onClick,
+                    onLongClick = handlers.onLongClick,
+                    onLongClickLabel = stringResource(R.string.selection_select),
+                )
+                // One screen-reader stop per row (name, then size or kind), as the prototype's aria-label.
+                .semantics(mergeDescendants = true) { if (look.selecting) selected = look.selected }
+                .heightIn(min = HemisphereRowHeight.default)
+                .padding(start = HemisphereSpacing.l, end = HemisphereSpacing.m),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(HemisphereSpacing.m),
+    ) {
+        if (look.selecting) SelectionCheck(look.selected)
+        Text(
+            text = entry.name,
+            style = HemisphereTheme.typography.body,
+            color = colors.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.MiddleEllipsis,
+            modifier = Modifier.weight(1f),
+        )
+        if (look.locked) {
+            Icon(
+                painter = painterResource(R.drawable.ic_lock),
+                contentDescription = stringResource(R.string.browser_locked_row),
+                tint = colors.textSecondary,
+            )
+        } else {
             Text(
-                text = entry.name,
-                style = HemisphereTheme.typography.body,
-                color = HemisphereTheme.colors.textPrimary,
+                text = entry.description(),
+                style = HemisphereTheme.typography.meta,
+                // Stepped down, primary is the base secondary: a selected row keeps that on the tint.
+                color = if (look.selected && LocalSteppedDown.current) colors.textPrimary else colors.textSecondary,
                 maxLines = 1,
-                overflow = TextOverflow.MiddleEllipsis,
-                modifier = Modifier.weight(1f),
-            )
-            if (locked) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_lock),
-                    contentDescription = stringResource(R.string.browser_locked_row),
-                    tint = HemisphereTheme.colors.textSecondary,
-                )
-            } else {
-                Text(
-                    text = entry.description(),
-                    style = HemisphereTheme.typography.meta,
-                    color = HemisphereTheme.colors.textSecondary,
-                    maxLines = 1,
-                )
-            }
-        }
-        if (showDivider) {
-            HorizontalDivider(
-                thickness = HemisphereSizes.border,
-                color = HemisphereTheme.colors.borderDefault,
-                modifier = Modifier.padding(start = HemisphereSpacing.l, end = HemisphereSpacing.m),
             )
         }
+    }
+    if (look.showDivider) {
+        HorizontalDivider(
+            thickness = HemisphereSizes.border,
+            color = colors.borderDefault,
+            // While selecting the divider starts after the check, as the prototype's .list.selecting.
+            modifier = Modifier.padding(start = dividerStart(look.selecting), end = HemisphereSpacing.m),
+        )
     }
 }
 

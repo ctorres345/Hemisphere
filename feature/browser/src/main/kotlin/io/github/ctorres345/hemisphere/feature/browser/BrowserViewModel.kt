@@ -22,6 +22,7 @@ import io.github.ctorres345.hemisphere.feature.browser.pane.PaneIntent
 import io.github.ctorres345.hemisphere.feature.browser.pane.PaneResult
 import io.github.ctorres345.hemisphere.feature.browser.pane.PaneState
 import io.github.ctorres345.hemisphere.feature.browser.pane.SavedPanes
+import io.github.ctorres345.hemisphere.feature.browser.selection.selectionResultFor
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -120,7 +121,12 @@ class BrowserViewModel
             intent: PaneIntent,
         ) {
             val tab = state.value.panes[pane]?.tab ?: return
+            val selection = tab.selectionResultFor(intent)
             when {
+                selection != null -> {
+                    emit(BrowserResult.Pane(pane, PaneResult.Selection(selection)))
+                }
+
                 // A row of the open folder's listing only: a second tap that lands before the list recomposes
                 // still holds the old folder's entry, and would open <new folder>/<old name>. Comparing the
                 // folder, not the entry, also holds when a child has the same name and metadata (a/a).
@@ -145,7 +151,8 @@ class BrowserViewModel
                     list(pane)
                 }
 
-                // Opening files comes with HEM-68; back at the root is left to the system.
+                // Opening files comes with HEM-68 and the actions with HEM-59, 60 and 61; back at the root is
+                // left to the system.
                 else -> {}
             }
         }
