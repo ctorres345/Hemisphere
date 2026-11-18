@@ -8,6 +8,7 @@ import io.github.ctorres345.hemisphere.core.fs.LockedFolders
 import io.github.ctorres345.hemisphere.core.fs.testing.FakeVolumeRepository
 import io.github.ctorres345.hemisphere.core.fs.testing.InMemoryProvider
 import io.github.ctorres345.hemisphere.core.model.FsPath
+import io.github.ctorres345.hemisphere.core.testing.FakeFolderViewRepository
 import io.github.ctorres345.hemisphere.core.testing.MainDispatcherRule
 import io.github.ctorres345.hemisphere.feature.browser.pane.PaneId
 import io.github.ctorres345.hemisphere.feature.browser.pane.PaneIntent
@@ -28,7 +29,7 @@ abstract class BrowserViewModelFixture {
         BrowserViewModel(
             SavedStateHandle(),
             GetHomeFolderUseCase(volumes),
-            ObserveFolderUseCase(volumes, main.dispatcher),
+            ObserveFolderUseCase(volumes, FakeFolderViewRepository(), main.dispatcher),
             GetFolderLockUseCase(LockedFolders(sdkInt)),
         )
 
