@@ -1,5 +1,6 @@
 package io.github.ctorres345.hemisphere.feature.browser
 
+import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
@@ -22,22 +23,21 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.ctorres345.hemisphere.core.designsystem.HemisphereShapes
 import io.github.ctorres345.hemisphere.core.designsystem.HemisphereSizes
 import io.github.ctorres345.hemisphere.core.designsystem.HemisphereSpacing
 import io.github.ctorres345.hemisphere.core.designsystem.HemisphereTheme
-import io.github.ctorres345.hemisphere.core.designsystem.ThemeStyle
-import io.github.ctorres345.hemisphere.core.designsystem.ThemeStylePreviews
-import io.github.ctorres345.hemisphere.core.model.Entry
 import io.github.ctorres345.hemisphere.core.model.FsError
+import io.github.ctorres345.hemisphere.feature.browser.pane.PaneIntent
+import io.github.ctorres345.hemisphere.feature.browser.pane.TabState
 
 /** The Browser screen bound to its ViewModel. The only composable that sees the ViewModel. */
 @Composable
@@ -49,7 +49,10 @@ fun BrowserRoute(
     BrowserScreen(state = state, onIntent = viewModel::onIntent, modifier = modifier)
 }
 
-/** Stateless: state in, intents out. */
+/**
+ * Stateless: state in, intents out. Single layout: the left pane fills the screen. System back pops
+ * the pane's history; at its root folder the system handles back (architecture §7).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BrowserScreen(
@@ -57,6 +60,10 @@ fun BrowserScreen(
     onIntent: (BrowserIntent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val paneId = state.shell.activePane
+    val tab = state.panes[paneId]?.tab
+    val onPaneIntent: (PaneIntent) -> Unit = remember(paneId, onIntent) { { onIntent(BrowserIntent.Pane(paneId, it)) } }
+    BackHandler(enabled = tab?.canGoBack == true) { onPaneIntent(PaneIntent.Back) }
     Scaffold(
         modifier = modifier.fillMaxSize(),
         // safeDrawing, not Material's systemBars default, keeps text clear of a side camera cutout.
@@ -65,7 +72,7 @@ fun BrowserScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = state.folder?.name ?: stringResource(R.string.browser_home),
+                        text = tab?.folder?.name ?: stringResource(R.string.browser_home),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -75,39 +82,64 @@ fun BrowserScreen(
             )
         },
     ) { padding ->
-        val error = state.error
         val content = Modifier.padding(padding).consumeWindowInsets(padding)
-        when {
-            state.entries.isEmpty() && state.loading -> {
-                Centered(content) { CircularProgressIndicator() }
-            }
+        if (tab != null) TabContent(tab, onPaneIntent, content)
+    }
+}
 
-            state.entries.isEmpty() && error != null -> {
-                Centered(content) { ErrorMessage(error, onRetry = { onIntent(BrowserIntent.Retry) }) }
-            }
+@Composable
+private fun TabContent(
+    tab: TabState,
+    onIntent: (PaneIntent) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val listing = tab.listing
+    val error = listing.error
+    when {
+        tab.lock.locked -> {
+            CenteredText(stringResource(R.string.browser_locked_folder), modifier)
+        }
 
-            state.entries.isEmpty() -> {
-                // The prototype's .empty: a centred block at the top of the list.
-                Column(
-                    modifier =
-                        content
-                            .fillMaxSize()
-                            .padding(vertical = HemisphereSpacing.xxl, horizontal = HemisphereSpacing.xl),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = stringResource(R.string.browser_empty_folder),
-                        style = HemisphereTheme.typography.heading,
-                        color = HemisphereTheme.colors.textPrimary,
-                        textAlign = TextAlign.Center,
-                    )
-                }
-            }
+        listing.entries.isEmpty() && !listing.complete -> {
+            Centered(modifier) { CircularProgressIndicator() }
+        }
 
-            else -> {
-                EntryList(state, onRetry = { onIntent(BrowserIntent.Retry) }, modifier = content)
+        listing.entries.isEmpty() && error != null -> {
+            Centered(modifier) { ErrorMessage(error, onRetry = { onIntent(PaneIntent.Retry) }) }
+        }
+
+        listing.entries.isEmpty() -> {
+            CenteredText(stringResource(R.string.browser_empty_folder), modifier)
+        }
+
+        else -> {
+            // A new list state for each visit to a folder, so a scroll anchor is restored once per visit.
+            key(tab.backStack.size, tab.folder.key) {
+                EntryList(tab, onIntent = onIntent, modifier = modifier)
             }
         }
+    }
+}
+
+/** The prototype's .empty: a centred block at the top of the list. */
+@Composable
+private fun CenteredText(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .padding(vertical = HemisphereSpacing.xxl, horizontal = HemisphereSpacing.xl),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = text,
+            style = HemisphereTheme.typography.heading,
+            color = HemisphereTheme.colors.textPrimary,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 
@@ -162,50 +194,3 @@ internal fun FsError.messageRes(): Int =
 
 /** Errors that a second try can fix. */
 internal fun FsError.canRetry(): Boolean = this != FsError.InvalidName && this != FsError.Unsupported
-
-@Composable
-private fun BrowserPreview(
-    style: ThemeStyle,
-    state: BrowserUiState,
-) {
-    HemisphereTheme(style = style) { BrowserScreen(state = state, onIntent = {}) }
-}
-
-@Preview
-@Composable
-private fun BrowserScreenListPreview(
-    @PreviewParameter(ThemeStylePreviews::class) style: ThemeStyle,
-) {
-    BrowserPreview(
-        style,
-        BrowserUiState(
-            entries =
-                listOf(
-                    Entry("Music", Entry.Kind.Folder),
-                    Entry(
-                        "Legend of the Twin Hemispheres - Director's Cut (USA, Europe) (Rev 2).zip",
-                        Entry.Kind.File,
-                        size = 2048,
-                    ),
-                    Entry("Readme.txt", Entry.Kind.File, size = 2048),
-                ),
-            loading = false,
-        ),
-    )
-}
-
-@Preview
-@Composable
-private fun BrowserScreenEmptyPreview(
-    @PreviewParameter(ThemeStylePreviews::class) style: ThemeStyle,
-) {
-    BrowserPreview(style, BrowserUiState(loading = false))
-}
-
-@Preview
-@Composable
-private fun BrowserScreenErrorPreview(
-    @PreviewParameter(ThemeStylePreviews::class) style: ThemeStyle,
-) {
-    BrowserPreview(style, BrowserUiState(loading = false, error = FsError.AccessDenied))
-}

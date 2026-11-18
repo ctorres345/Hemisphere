@@ -5,8 +5,15 @@ import com.github.takahirom.roborazzi.RoborazziOptions
 import com.github.takahirom.roborazzi.captureRoboImage
 import io.github.ctorres345.hemisphere.core.designsystem.HemisphereTheme
 import io.github.ctorres345.hemisphere.core.designsystem.ThemeStyle
+import io.github.ctorres345.hemisphere.core.domain.files.FolderLock
 import io.github.ctorres345.hemisphere.core.model.Entry
 import io.github.ctorres345.hemisphere.core.model.FsError
+import io.github.ctorres345.hemisphere.core.model.FsPath
+import io.github.ctorres345.hemisphere.core.model.Listing
+import io.github.ctorres345.hemisphere.core.model.VolumeId
+import io.github.ctorres345.hemisphere.feature.browser.pane.PaneId
+import io.github.ctorres345.hemisphere.feature.browser.pane.PaneState
+import io.github.ctorres345.hemisphere.feature.browser.pane.TabState
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
@@ -50,23 +57,48 @@ class BrowserScreenshotTest(
     }
 
     @Test
-    fun list() = capture("list", BrowserUiState(entries = SAMPLE_ENTRIES, loading = false))
+    fun list() = capture("list", done(SAMPLE_ENTRIES))
 
     @Test
-    fun empty() = capture("empty", BrowserUiState(loading = false))
+    fun empty() = capture("empty", done(emptyList()))
 
     @Test
-    fun error() = capture("error", BrowserUiState(loading = false, error = FsError.AccessDenied))
+    fun error() = capture("error", done(emptyList(), FsError.AccessDenied))
 
     /** A listing that failed part-way: the error row sits above the entries that did load. */
     @Test
-    fun partialError() =
-        capture("partial-error", BrowserUiState(entries = SAMPLE_ENTRIES, loading = false, error = FsError.Timeout))
+    fun partialError() = capture("partial-error", done(SAMPLE_ENTRIES, FsError.Timeout))
+
+    /** `Android` on Android 11+: `data` and `obb` show a lock. */
+    @Test
+    fun lockedRows() =
+        capture(
+            "locked-rows",
+            done(
+                listOf(
+                    Entry("data", Entry.Kind.Folder),
+                    Entry("media", Entry.Kind.Folder),
+                    Entry("obb", Entry.Kind.Folder),
+                ),
+                lock = FolderLock(lockedChildren = setOf("data", "obb")),
+            ),
+        )
+
+    /** Opening `Android/data`: Android keeps it private, so the screen explains instead of listing. */
+    @Test
+    fun lockedFolder() = capture("locked-folder", done(emptyList(), lock = FolderLock(locked = true)))
+
+    private fun done(
+        entries: List<Entry>,
+        error: FsError? = null,
+        lock: FolderLock = FolderLock.NONE,
+    ) = TabState(backStack = listOf(ROOT), listing = Listing(entries, complete = true, error), lock = lock)
 
     private fun capture(
         state: String,
-        uiState: BrowserUiState,
+        tab: TabState,
     ) {
+        val uiState = BrowserUiState(panes = mapOf(PaneId.Left to PaneState(listOf(tab))))
         RuntimeEnvironment.setQualifiers(device.qualifiers)
         captureRoboImage(
             filePath = "src/test/screenshots/browser-$state-${device.name.lowercase()}-${style.name.lowercase()}.png",
@@ -90,6 +122,8 @@ class BrowserScreenshotTest(
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}-{1}")
         fun parameters(): List<Array<Any>> =
             Device.entries.flatMap { device -> ThemeStyle.entries.map { style -> arrayOf<Any>(device, style) } }
+
+        private val ROOT = FsPath.root(VolumeId("v"))
 
         private val SAMPLE_ENTRIES =
             listOf(

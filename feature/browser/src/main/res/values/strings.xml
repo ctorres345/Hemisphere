@@ -4,6 +4,8 @@
     <string name="browser_empty_folder">This folder is empty</string>
     <string name="browser_kind_folder">Folder</string>
     <string name="browser_retry">Retry</string>
+    <string name="browser_locked_folder">Android keeps this folder private.</string>
+    <string name="browser_locked_row">Private</string>
     <string name="browser_error_not_found">This folder no longer exists.</string>
     <string name="browser_error_access_denied">Hemisphere can\'t open this folder.</string>
     <string name="browser_error_volume_unavailable">This storage isn\'t available. Is it still connected?</string>
