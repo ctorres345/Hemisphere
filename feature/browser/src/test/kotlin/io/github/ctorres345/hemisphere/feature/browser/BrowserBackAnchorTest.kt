@@ -64,6 +64,7 @@ class BrowserBackAnchorTest : BrowserViewModelFixture() {
                 PaneIntent.OpenEntry(
                     viewModel.tab.listing.entries
                         .first(),
+                    from = home,
                     leaving = anchor,
                 ),
             )

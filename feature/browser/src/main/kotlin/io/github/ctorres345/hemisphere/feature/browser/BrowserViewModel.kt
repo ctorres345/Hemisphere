@@ -59,11 +59,12 @@ class BrowserViewModel
         ) {
             val tab = state.value.panes[pane]?.tab ?: return
             when {
-                // A row of this listing only: a second tap that lands before the list recomposes still holds
-                // the old folder's entry, and would open <new folder>/<old name>.
+                // A row of the open folder's listing only: a second tap that lands before the list recomposes
+                // still holds the old folder's entry, and would open <new folder>/<old name>. Comparing the
+                // folder, not the entry, also holds when a child has the same name and metadata (a/a).
                 intent is PaneIntent.OpenEntry &&
                     intent.entry.kind == Entry.Kind.Folder &&
-                    intent.entry in tab.listing.entries -> {
+                    intent.from == tab.folder -> {
                     emit(
                         BrowserResult.Pane(
                             pane,

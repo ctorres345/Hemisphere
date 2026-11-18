@@ -37,5 +37,5 @@ abstract class BrowserViewModelFixture {
     protected fun BrowserViewModel.send(intent: PaneIntent) = onIntent(BrowserIntent.Pane(PaneId.Left, intent))
 
     protected fun BrowserViewModel.open(name: String) =
-        send(PaneIntent.OpenEntry(tab.listing.entries.first { it.name == name }, leaving = null))
+        send(PaneIntent.OpenEntry(tab.listing.entries.first { it.name == name }, from = tab.folder, leaving = null))
 }

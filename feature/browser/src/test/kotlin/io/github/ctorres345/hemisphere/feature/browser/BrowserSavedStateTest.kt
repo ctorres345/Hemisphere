@@ -11,6 +11,8 @@ import io.github.ctorres345.hemisphere.core.fs.testing.FakeVolumeRepository
 import io.github.ctorres345.hemisphere.core.fs.testing.InMemoryProvider
 import io.github.ctorres345.hemisphere.core.fs.testing.file
 import io.github.ctorres345.hemisphere.core.fs.testing.folder
+import io.github.ctorres345.hemisphere.core.model.Entry
+import io.github.ctorres345.hemisphere.core.model.FsPath
 import io.github.ctorres345.hemisphere.core.testing.MainDispatcherRule
 import io.github.ctorres345.hemisphere.feature.browser.pane.PaneId
 import io.github.ctorres345.hemisphere.feature.browser.pane.PaneIntent
@@ -63,8 +65,8 @@ class BrowserSavedStateTest {
             val handle = SavedStateHandle()
             val before = viewModel(handle)
             val atHome = ScrollAnchor(focusedRow = "Music", firstVisibleRow = "Music", firstVisibleOffset = 7)
-            before.onIntent(BrowserIntent.Pane(PaneId.Left, PaneIntent.OpenEntry(folder("Music"), leaving = atHome)))
-            before.onIntent(BrowserIntent.Pane(PaneId.Left, PaneIntent.OpenEntry(folder("Rock"), leaving = null)))
+            before.open(folder("Music"), from = home, leaving = atHome)
+            before.open(folder("Rock"), from = music)
 
             val after =
                 viewModel(handle.afterProcessDeath())
@@ -88,4 +90,10 @@ class BrowserSavedStateTest {
 
             assertEquals(listOf(home), tab.backStack)
         }
+
+    private fun BrowserViewModel.open(
+        entry: Entry,
+        from: FsPath,
+        leaving: ScrollAnchor? = null,
+    ) = onIntent(BrowserIntent.Pane(PaneId.Left, PaneIntent.OpenEntry(entry, from, leaving)))
 }
