@@ -18,6 +18,7 @@ import io.github.ctorres345.hemisphere.feature.browser.pane.PaneId
 import io.github.ctorres345.hemisphere.feature.browser.pane.PaneIntent
 import io.github.ctorres345.hemisphere.feature.browser.pane.SavedPanes
 import io.github.ctorres345.hemisphere.feature.browser.pane.ScrollAnchor
+import io.github.ctorres345.hemisphere.feature.browser.pane.worstCasePanes
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -96,4 +97,31 @@ class BrowserSavedStateTest {
         from: FsPath,
         leaving: ScrollAnchor? = null,
     ) = onIntent(BrowserIntent.Pane(PaneId.Left, PaneIntent.OpenEntry(entry, from, leaving)))
+
+    @Test
+    fun `fifty long-named levels with refs in both panes round-trip with equal keys and anchors`() {
+        val panes = worstCasePanes()
+
+        val bundle = SavedPanes.save(panes)
+        val restored = SavedPanes.restore(bundle)
+
+        // Saved as a root plus one raw name per level above it, not as full paths per level.
+        assertEquals(
+            panes
+                .getValue(PaneId.Left)
+                .tab.backStack
+                .drop(1)
+                .map { it.name },
+            bundle.getStringArrayList("Left.0.names"),
+        )
+
+        assertEquals(panes.keys, restored.keys)
+        panes.forEach { (id, pane) ->
+            val before = pane.tab
+            val after = restored.getValue(id).tab
+            assertEquals(before.backStack.map { it.key }, after.backStack.map { it.key })
+            assertEquals(before.backStack.map { it.ref }, after.backStack.map { it.ref })
+            assertEquals(before.anchors, after.anchors)
+        }
+    }
 }
