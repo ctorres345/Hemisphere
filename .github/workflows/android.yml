@@ -69,6 +69,14 @@ jobs:
       - name: Run tests and lint
         run: ./gradlew check --console=plain
 
+      # The Room plugin rewrites schemas/<db>/<version>.json from the entities on every build. A
+      # committed version must never change (a new schema needs a new version and a migration), and
+      # a new version's file must be committed with it.
+      - name: Check Room schemas are committed and unchanged
+        run: |
+          changed="$(git status --porcelain --untracked-files=all -- '*/schemas/')"
+          if [ -n "$changed" ]; then echo "$changed"; exit 1; fi
+
       # On a screenshot mismatch, the expected, actual and diff images help decide: fix or re-record.
       - name: Upload screenshot diffs
         if: failure()
