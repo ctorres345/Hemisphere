@@ -94,4 +94,12 @@ class AndroidInputAdapterTest {
         assertFalse(GamepadMotionEvent(0, leftX = 0.1f, rightY = -0.05f).isActive(0.25f))
         assertTrue(GamepadMotionEvent(0, leftX = 0.6f).isActive(0.25f))
     }
+
+    @Test
+    fun aPadThatReportsAsAKeyboardKeepsGamepadForItsButtons() {
+        val pad = InputDevice.SOURCE_KEYBOARD or InputDevice.SOURCE_DPAD
+        val alphabetic = InputDevice.KEYBOARD_TYPE_ALPHABETIC
+        assertEquals(InputMode.Gamepad, keyInputMode(pad, KeyEvent.KEYCODE_BUTTON_A, pad, alphabetic))
+        assertEquals(InputMode.Gamepad, keyInputMode(pad, KeyEvent.KEYCODE_BUTTON_1, pad, alphabetic))
+    }
 }

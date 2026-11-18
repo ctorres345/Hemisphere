@@ -54,7 +54,8 @@ fun KeyEvent.inputMode(): InputMode? {
     // Most keys (letters typed in a text field) signal nothing: skip the device lookup for them. A soft
     // keyboard's keys (Gboard's cursor arrows, Enter) come from a touch user, so they signal nothing too.
     val soft = flags and KeyEvent.FLAG_SOFT_KEYBOARD != 0
-    if (soft || (keyCode !in NAVIGATION_KEYS && !isGamepadKey(source, keyCode))) return null
+    val buttonOrNavigation = keyCode in NAVIGATION_KEYS || keyCode in BUTTON_KEYS || keyCode in NUMBERED_BUTTON_KEYS
+    if (soft || (!buttonOrNavigation && !isGamepadKey(source, keyCode))) return null
     val device = device
     return keyInputMode(
         source = source,
@@ -82,8 +83,13 @@ fun keyInputMode(
             !deviceSources.has(InputDevice.SOURCE_GAMEPAD) &&
             !deviceSources.has(InputDevice.SOURCE_JOYSTICK)
     return when {
+        // A real keyboard never sends gamepad buttons: a pad that reports as a keyboard keeps Gamepad.
+        keyboard && (keyCode in BUTTON_KEYS || keyCode in NUMBERED_BUTTON_KEYS) -> InputMode.Gamepad
+
         keyboard -> if (keyCode in NAVIGATION_KEYS) InputMode.Keyboard else null
+
         isGamepadKey(source, keyCode) -> InputMode.Gamepad
+
         else -> null
     }
 }

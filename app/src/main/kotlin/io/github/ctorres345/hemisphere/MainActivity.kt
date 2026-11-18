@@ -17,7 +17,6 @@ import io.github.ctorres345.hemisphere.core.designsystem.InputReporter
 import io.github.ctorres345.hemisphere.core.designsystem.LocalInputMode
 import io.github.ctorres345.hemisphere.core.designsystem.LocalInputReporter
 import io.github.ctorres345.hemisphere.core.input.InputModeTracker
-import io.github.ctorres345.hemisphere.core.input.inputMode
 
 /**
  * The only Activity. Hosts the app back stack ([HemisphereNavHost]) and tracks the last input used
@@ -46,9 +45,9 @@ class MainActivity : ComponentActivity() {
     /** Input from popup windows (menus), which skips this Activity's dispatch methods. */
     private val popupInput =
         object : InputReporter {
-            override fun onKey(event: KeyEvent) = track(event.inputMode())
+            override fun onKey(event: KeyEvent) = inputModes.onKey(event)
 
-            override fun onPointer() = track(InputMode.Touch)
+            override fun onPointer() = inputModes.onTouch()
         }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -60,23 +59,18 @@ class MainActivity : ComponentActivity() {
     // own override restricted. The event goes on to super unchanged.
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        track(event.inputMode())
+        inputModes.onKey(event)
         return super.dispatchKeyEvent(event)
     }
 
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
-        track(event.inputMode())
+        inputModes.onMotion(event)
         return super.dispatchTouchEvent(event)
     }
 
     override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
-        track(event.inputMode())
+        inputModes.onMotion(event)
         return super.dispatchGenericMotionEvent(event)
-    }
-
-    /** Every event reaches the UI unchanged; a mode-bearing one also updates the tracked mode. */
-    private fun track(mode: InputMode?) {
-        mode?.let(inputModes::onInput)
     }
 
     private companion object {
