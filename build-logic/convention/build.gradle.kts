@@ -45,6 +45,10 @@ gradlePlugin {
             id = "hemisphere.design.tokens"
             implementationClass = "DesignTokensConventionPlugin"
         }
+        register("screenshot") {
+            id = "hemisphere.screenshot"
+            implementationClass = "ScreenshotConventionPlugin"
+        }
         register("moduleGraph") {
             id = "hemisphere.module.graph"
             implementationClass = "ModuleGraphConventionPlugin"

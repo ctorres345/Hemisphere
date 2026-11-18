@@ -65,6 +65,7 @@ robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectr
 roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = "roborazzi" }
 roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose", version.ref = "roborazzi" }
 compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 
 # build-logic only
 android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
@@ -94,4 +95,5 @@ hemisphere-android-library-compose = { id = "hemisphere.android.library.compose"
 hemisphere-design-tokens = { id = "hemisphere.design.tokens" }
 hemisphere-android-application = { id = "hemisphere.android.application" }
 hemisphere-hilt = { id = "hemisphere.hilt" }
+hemisphere-screenshot = { id = "hemisphere.screenshot" }
 hemisphere-module-graph = { id = "hemisphere.module.graph" }

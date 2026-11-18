@@ -78,7 +78,7 @@ private val materialShapes =
 // The theme's colors change with the theme and accent, so they travel as a composition local, like
 // MaterialTheme's own. This is the one local the app defines (compose-lints allows theme values).
 @Suppress("ComposeCompositionLocalUsage")
-private val LocalHemisphereColors =
+internal val LocalHemisphereColors =
     staticCompositionLocalOf { ThemeTokens.light.withAccent(Accent.Blue) }
 
 internal fun ThemeStyle.palette(): ThemePalette =

@@ -29,4 +29,19 @@ object HemisphereSizes {
 
     /** The outline of buttons and fields (prototype `.btn`). */
     val border: Dp = ThemeTokens.sizeBorder
+
+    /** The gamepad focus ring's stroke (prototype `.gf`). */
+    val focusRing: Dp = ThemeTokens.sizeFocusRing
+
+    /** The gap between a filled control and its focus ring (prototype `outline-offset: 2px`). */
+    val focusRingGap: Dp = ThemeTokens.sizeFocusRingGap
+
+    /** The button-hint footer's height (prototype `.hints`). */
+    val hintFooter: Dp = ThemeTokens.sizeHintFooter
+
+    /** One button glyph in the hint footer (prototype `.gl`). */
+    val hintGlyph: Dp = ThemeTokens.sizeHintGlyph
+
+    /** The outline of a hint glyph (prototype `.gl` border). */
+    val hintGlyphBorder: Dp = ThemeTokens.sizeHintGlyphBorder
 }
