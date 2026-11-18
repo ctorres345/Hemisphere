@@ -1,0 +1,79 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "a627a6cdc3559c387b9495343ccd9010",
+    "entities": [
+      {
+        "tableName": "grants",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`volume_id` TEXT NOT NULL, `tree_uri` TEXT NOT NULL, PRIMARY KEY(`volume_id`))",
+        "fields": [
+          {
+            "fieldPath": "volumeId",
+            "columnName": "volume_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "treeUri",
+            "columnName": "tree_uri",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "volume_id"
+          ]
+        }
+      },
+      {
+        "tableName": "removable_ids",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`volume_id` TEXT NOT NULL, `label` TEXT NOT NULL, `capacity_bytes` INTEGER NOT NULL, PRIMARY KEY(`volume_id`))",
+        "fields": [
+          {
+            "fieldPath": "volumeId",
+            "columnName": "volume_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "label",
+            "columnName": "label",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "capacityBytes",
+            "columnName": "capacity_bytes",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "volume_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_removable_ids_label_capacity_bytes",
+            "unique": false,
+            "columnNames": [
+              "label",
+              "capacity_bytes"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_removable_ids_label_capacity_bytes` ON `${TABLE_NAME}` (`label`, `capacity_bytes`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'a627a6cdc3559c387b9495343ccd9010')"
+    ]
+  }
+}
