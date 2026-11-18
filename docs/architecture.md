@@ -351,8 +351,11 @@ ObserveJobsUseCase ◄── StateFlow<List<JobState>> (progress chip, queue she
   waiting behind a long job. Two jobs may not overlap: `JobQueue.enqueue` checks this
   atomically, in both directions (a short job against queued and running long jobs, and a long
   job against unfinished short jobs). Paths overlap when one is the other, or an ancestor or
-  descendant of it, so renaming `/SD` while copying into `/SD/ROMs` is refused too. The refused
-  job is not queued; the user sees "In use by a job". A rename waiting on the conflict sheet
+  descendant of it, so renaming `/SD` while copying into `/SD/ROMs` is refused too. A job claims
+  its roots and each entry it creates in the destination (`destination/<root name>`); those claims
+  are exclusive. The destination folder itself is a shared claim: two copies may write into one
+  folder, but no job may change that folder or an ancestor while another writes into it. The
+  refused job is not queued; the user sees "In use by a job". A rename waiting on the conflict sheet
   keeps its claim until it is answered or cancelled.
 - **Rename**: the use case checks the new name against the volume's limits before enqueueing.
   The conflict check skips the entry being renamed: on a case-insensitive volume `a.txt` to
