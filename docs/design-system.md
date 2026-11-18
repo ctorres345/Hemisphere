@@ -82,9 +82,13 @@ Auto is a heuristic: a known-device table keyed by `InputDevice` vendor/product 
 ### Input-aware UI
 
 - The app tracks the **last input used**.
-  - Touch: hide the focus ring and button hints, use touch density.
+  - Touch (touch screen, mouse, stylus): hide the focus ring and button hints, use touch density.
   - Gamepad: show the focus ring and the button-hint footer, use compact density.
-- **Focus ring**: always visible in gamepad mode, in every theme × accent combination.
+  - Keyboard (a hardware keyboard: a device with an alphabetic layout and no gamepad or joystick):
+    show the focus ring and the focused row's fill, hide the button hints, use touch density. Only
+    navigation keys (arrows, Tab, Enter, Escape) switch to it, so typing a name changes nothing.
+    A D-pad device stays Gamepad.
+- **Focus ring**: always visible in gamepad and keyboard mode, in every theme × accent combination.
 - **Active pane**: an accent bar at the top of the pane header. The inactive pane steps its text
   down one token (`text.primary` → `text.secondary`, `text.secondary` → `text.tertiary`) instead
   of using opacity, and those pairs are in the contrast matrix. On a selected row (`accent.tint`)

@@ -46,8 +46,66 @@ fun isPointerSource(source: Int): Boolean = source and InputDevice.SOURCE_CLASS_
 
 private fun Int.has(source: Int): Boolean = this and source == source
 
-/** The [InputMode] this key event signals: Gamepad from a gamepad key, else null (ignore). */
-fun KeyEvent.inputMode(): InputMode? = if (isGamepadKey(source, keyCode)) InputMode.Gamepad else null
+/**
+ * The [InputMode] this key event signals, or null (ignore). See [keyInputMode]; the device's own sources
+ * and keyboard type tell a hardware keyboard from a gamepad. A soft keyboard's key events signal nothing.
+ */
+fun KeyEvent.inputMode(): InputMode? {
+    // Most keys (letters typed in a text field) signal nothing: skip the device lookup for them. A soft
+    // keyboard's keys (Gboard's cursor arrows, Enter) come from a touch user, so they signal nothing too.
+    val soft = flags and KeyEvent.FLAG_SOFT_KEYBOARD != 0
+    val buttonOrNavigation = keyCode in NAVIGATION_KEYS || keyCode in BUTTON_KEYS || keyCode in NUMBERED_BUTTON_KEYS
+    if (soft || (!buttonOrNavigation && !isGamepadKey(source, keyCode))) return null
+    val device = device
+    return keyInputMode(
+        source = source,
+        keyCode = keyCode,
+        deviceSources = device?.sources ?: source,
+        keyboardType = device?.keyboardType ?: InputDevice.KEYBOARD_TYPE_NONE,
+    )
+}
+
+/**
+ * The [InputMode] a key signals, or null (ignore). A device with an alphabetic [keyboardType] and no
+ * gamepad or joystick in its [deviceSources] is a hardware keyboard: its navigation keys (arrows, Tab,
+ * Enter, Escape) signal Keyboard, and its other keys, such as letters typed in a text field, nothing.
+ * Every other device signals Gamepad for a gamepad key ([isGamepadKey]), so a D-pad stays a gamepad.
+ */
+fun keyInputMode(
+    source: Int,
+    keyCode: Int,
+    deviceSources: Int,
+    keyboardType: Int,
+): InputMode? {
+    // Not isGamepadSource: keyboards report SOURCE_DPAD too, for their arrow keys.
+    val keyboard =
+        keyboardType == InputDevice.KEYBOARD_TYPE_ALPHABETIC &&
+            !deviceSources.has(InputDevice.SOURCE_GAMEPAD) &&
+            !deviceSources.has(InputDevice.SOURCE_JOYSTICK)
+    return when {
+        // A real keyboard never sends gamepad buttons: a pad that reports as a keyboard keeps Gamepad.
+        keyboard && (keyCode in BUTTON_KEYS || keyCode in NUMBERED_BUTTON_KEYS) -> InputMode.Gamepad
+
+        keyboard -> if (keyCode in NAVIGATION_KEYS) InputMode.Keyboard else null
+
+        isGamepadKey(source, keyCode) -> InputMode.Gamepad
+
+        else -> null
+    }
+}
+
+/** A hardware keyboard's keys that move or act on focus; its arrows arrive as D-pad key codes. */
+private val NAVIGATION_KEYS =
+    setOf(
+        KeyEvent.KEYCODE_DPAD_UP,
+        KeyEvent.KEYCODE_DPAD_DOWN,
+        KeyEvent.KEYCODE_DPAD_LEFT,
+        KeyEvent.KEYCODE_DPAD_RIGHT,
+        KeyEvent.KEYCODE_TAB,
+        KeyEvent.KEYCODE_ENTER,
+        KeyEvent.KEYCODE_NUMPAD_ENTER,
+        KeyEvent.KEYCODE_ESCAPE,
+    )
 
 /**
  * True when a key event with this [source] and [keyCode] came from a gamepad. Android also tags hardware

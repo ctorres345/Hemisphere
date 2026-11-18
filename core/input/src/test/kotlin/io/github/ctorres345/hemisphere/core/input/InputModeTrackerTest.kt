@@ -23,6 +23,19 @@ class InputModeTrackerTest {
     }
 
     @Test
+    fun keyboardThenTouchThenGamepadSwitchInTurn() {
+        val tracker = InputModeTracker()
+        tracker.onInput(InputMode.Keyboard)
+        assertEquals(InputMode.Keyboard, tracker.mode.value)
+        tracker.onTouch()
+        assertEquals(InputMode.Touch, tracker.mode.value)
+        tracker.onGamepad()
+        assertEquals(InputMode.Gamepad, tracker.mode.value)
+        tracker.onInput(InputMode.Keyboard)
+        assertEquals(InputMode.Keyboard, tracker.mode.value)
+    }
+
+    @Test
     fun emitsOnlyOnTheFirstEventOfTheOtherKind() =
         runTest(UnconfinedTestDispatcher()) {
             val tracker = InputModeTracker()
