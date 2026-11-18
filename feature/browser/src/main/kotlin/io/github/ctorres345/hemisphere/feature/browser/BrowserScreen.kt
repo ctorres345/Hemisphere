@@ -1,27 +1,41 @@
 package io.github.ctorres345.hemisphere.feature.browser
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.ctorres345.hemisphere.core.designsystem.HemisphereShapes
+import io.github.ctorres345.hemisphere.core.designsystem.HemisphereSizes
 import io.github.ctorres345.hemisphere.core.designsystem.HemisphereSpacing
 import io.github.ctorres345.hemisphere.core.designsystem.HemisphereTheme
+import io.github.ctorres345.hemisphere.core.designsystem.ThemeStyle
+import io.github.ctorres345.hemisphere.core.designsystem.ThemeStylePreviews
 import io.github.ctorres345.hemisphere.core.model.Entry
 import io.github.ctorres345.hemisphere.core.model.FsError
 
@@ -36,36 +50,62 @@ fun BrowserRoute(
 }
 
 /** Stateless: state in, intents out. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BrowserScreen(
     state: BrowserUiState,
     onIntent: (BrowserIntent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Surface(modifier = modifier.fillMaxSize()) {
-        Column(modifier = Modifier.safeDrawingPadding()) {
-            Text(
-                text = state.folder?.name ?: stringResource(R.string.browser_home),
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(HemisphereSpacing.l),
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        // safeDrawing, not Material's systemBars default, keeps text clear of a side camera cutout.
+        contentWindowInsets = WindowInsets.safeDrawing,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = state.folder?.name ?: stringResource(R.string.browser_home),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                },
+                expandedHeight = HemisphereSizes.appBar,
+                windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top),
             )
-            val error = state.error
-            when {
-                state.entries.isEmpty() && state.loading -> {
-                    Centered { CircularProgressIndicator() }
-                }
+        },
+    ) { padding ->
+        val error = state.error
+        val content = Modifier.padding(padding).consumeWindowInsets(padding)
+        when {
+            state.entries.isEmpty() && state.loading -> {
+                Centered(content) { CircularProgressIndicator() }
+            }
 
-                state.entries.isEmpty() && error != null -> {
-                    Centered { ErrorMessage(error, onRetry = { onIntent(BrowserIntent.Retry) }) }
-                }
+            state.entries.isEmpty() && error != null -> {
+                Centered(content) { ErrorMessage(error, onRetry = { onIntent(BrowserIntent.Retry) }) }
+            }
 
-                state.entries.isEmpty() -> {
-                    Centered { Text(stringResource(R.string.browser_empty_folder)) }
+            state.entries.isEmpty() -> {
+                // The prototype's .empty: a centred block at the top of the list.
+                Column(
+                    modifier =
+                        content
+                            .fillMaxSize()
+                            .padding(vertical = HemisphereSpacing.xxl, horizontal = HemisphereSpacing.xl),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = stringResource(R.string.browser_empty_folder),
+                        style = HemisphereTheme.typography.heading,
+                        color = HemisphereTheme.colors.textPrimary,
+                        textAlign = TextAlign.Center,
+                    )
                 }
+            }
 
-                else -> {
-                    EntryList(state, onRetry = { onIntent(BrowserIntent.Retry) })
-                }
+            else -> {
+                EntryList(state, onRetry = { onIntent(BrowserIntent.Retry) }, modifier = content)
             }
         }
     }
@@ -82,9 +122,21 @@ internal fun ErrorMessage(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(HemisphereSpacing.s),
     ) {
-        Text(text = stringResource(error.messageRes()), textAlign = TextAlign.Center)
+        Text(
+            text = stringResource(error.messageRes()),
+            style = HemisphereTheme.typography.body,
+            color = HemisphereTheme.colors.textSecondary,
+            textAlign = TextAlign.Center,
+        )
         if (error.canRetry()) {
-            Button(onClick = onRetry) { Text(stringResource(R.string.browser_retry)) }
+            // The prototype's plain .btn: outlined in border.strong, row radius.
+            OutlinedButton(
+                onClick = onRetry,
+                shape = HemisphereShapes.row,
+                border = BorderStroke(HemisphereSizes.border, HemisphereTheme.colors.borderStrong),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = HemisphereTheme.colors.textPrimary),
+                contentPadding = PaddingValues(horizontal = HemisphereSpacing.l),
+            ) { Text(stringResource(R.string.browser_retry)) }
         }
     }
 }
@@ -111,29 +163,49 @@ internal fun FsError.messageRes(): Int =
 /** Errors that a second try can fix. */
 internal fun FsError.canRetry(): Boolean = this != FsError.InvalidName && this != FsError.Unsupported
 
-@Preview
 @Composable
-private fun BrowserScreenListPreview() {
-    HemisphereTheme {
-        BrowserScreen(
-            state =
-                BrowserUiState(
-                    entries =
-                        listOf(
-                            Entry("Music", Entry.Kind.Folder),
-                            Entry("Readme.txt", Entry.Kind.File, size = 2048),
-                        ),
-                    loading = false,
-                ),
-            onIntent = {},
-        )
-    }
+private fun BrowserPreview(
+    style: ThemeStyle,
+    state: BrowserUiState,
+) {
+    HemisphereTheme(style = style) { BrowserScreen(state = state, onIntent = {}) }
 }
 
 @Preview
 @Composable
-private fun BrowserScreenErrorPreview() {
-    HemisphereTheme {
-        BrowserScreen(state = BrowserUiState(loading = false, error = FsError.AccessDenied), onIntent = {})
-    }
+private fun BrowserScreenListPreview(
+    @PreviewParameter(ThemeStylePreviews::class) style: ThemeStyle,
+) {
+    BrowserPreview(
+        style,
+        BrowserUiState(
+            entries =
+                listOf(
+                    Entry("Music", Entry.Kind.Folder),
+                    Entry(
+                        "Legend of the Twin Hemispheres - Director's Cut (USA, Europe) (Rev 2).zip",
+                        Entry.Kind.File,
+                        size = 2048,
+                    ),
+                    Entry("Readme.txt", Entry.Kind.File, size = 2048),
+                ),
+            loading = false,
+        ),
+    )
+}
+
+@Preview
+@Composable
+private fun BrowserScreenEmptyPreview(
+    @PreviewParameter(ThemeStylePreviews::class) style: ThemeStyle,
+) {
+    BrowserPreview(style, BrowserUiState(loading = false))
+}
+
+@Preview
+@Composable
+private fun BrowserScreenErrorPreview(
+    @PreviewParameter(ThemeStylePreviews::class) style: ThemeStyle,
+) {
+    BrowserPreview(style, BrowserUiState(loading = false, error = FsError.AccessDenied))
 }

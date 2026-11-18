@@ -1,17 +1,30 @@
 package io.github.ctorres345.hemisphere.feature.browser
 
 import android.text.format.Formatter
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.ListItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
+import io.github.ctorres345.hemisphere.core.designsystem.HemisphereRowHeight
+import io.github.ctorres345.hemisphere.core.designsystem.HemisphereSizes
+import io.github.ctorres345.hemisphere.core.designsystem.HemisphereSpacing
+import io.github.ctorres345.hemisphere.core.designsystem.HemisphereTheme
 import io.github.ctorres345.hemisphere.core.model.Entry
 
 @Composable
@@ -20,7 +33,8 @@ internal fun EntryList(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyColumn(modifier = modifier.fillMaxSize()) {
+    // The prototype's .list ends with an s2 gap below the last row.
+    LazyColumn(modifier = modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = HemisphereSpacing.s)) {
         entryRows(state, onRetry)
     }
 }
@@ -36,11 +50,52 @@ internal fun LazyListScope.entryRows(
             ErrorMessage(error, onRetry = onRetry, modifier = Modifier.fillMaxWidth())
         }
     }
-    itemsIndexed(state.entries, key = { index, _ -> keys[index] }) { _, entry ->
-        ListItem(
-            headlineContent = { Text(entry.name) },
-            supportingContent = { Text(entry.description()) },
-        )
+    itemsIndexed(state.entries, key = { index, _ -> keys[index] }) { index, entry ->
+        EntryRow(entry, showDivider = index > 0)
+    }
+}
+
+/** One file or folder row, as in the prototype's `.row`: name on the left, size or kind on the right. */
+@Composable
+private fun EntryRow(
+    entry: Entry,
+    showDivider: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier = modifier.fillMaxWidth().padding(horizontal = HemisphereSpacing.xs)) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    // One screen-reader stop per row (name, then size or kind), as the prototype's aria-label.
+                    .semantics(mergeDescendants = true) { }
+                    .heightIn(min = HemisphereRowHeight.default)
+                    .padding(start = HemisphereSpacing.l, end = HemisphereSpacing.m),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(HemisphereSpacing.m),
+        ) {
+            Text(
+                text = entry.name,
+                style = HemisphereTheme.typography.body,
+                color = HemisphereTheme.colors.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.MiddleEllipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = entry.description(),
+                style = HemisphereTheme.typography.meta,
+                color = HemisphereTheme.colors.textSecondary,
+                maxLines = 1,
+            )
+        }
+        if (showDivider) {
+            HorizontalDivider(
+                thickness = HemisphereSizes.border,
+                color = HemisphereTheme.colors.borderDefault,
+                modifier = Modifier.padding(start = HemisphereSpacing.l, end = HemisphereSpacing.m),
+            )
+        }
     }
 }
 

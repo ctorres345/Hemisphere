@@ -83,6 +83,7 @@ ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-gradle" }
 hemisphere-jvm-library = { id = "hemisphere.jvm.library" }
 hemisphere-android-library = { id = "hemisphere.android.library" }
 hemisphere-android-library-compose = { id = "hemisphere.android.library.compose" }
+hemisphere-design-tokens = { id = "hemisphere.design.tokens" }
 hemisphere-android-application = { id = "hemisphere.android.application" }
 hemisphere-hilt = { id = "hemisphere.hilt" }
 hemisphere-module-graph = { id = "hemisphere.module.graph" }

@@ -68,8 +68,70 @@ private fun Project.registerTypedDetekt(configFiles: List<java.io.File>) {
                 reports.sarif.required.set(false)
             }
         tasks.named("check").configure { dependsOn(task) }
+        registerDetektFixture(configFiles, variant.compileClasspath, components.sdkComponents.bootClasspath)
     }
     limitPlainDetektToTests()
+}
+
+/**
+ * Proves the forbidden-value rules fire. A module may keep `src/detektFixture/kotlin/`: code that is
+ * never compiled, where each line ending in `// expect: RuleId` must be reported by detekt with the
+ * module's config. `check` fails when one is not, so a typo or a dropped rule cannot pass quietly.
+ */
+private fun Project.registerDetektFixture(
+    configFiles: List<java.io.File>,
+    compileClasspath: org.gradle.api.file.FileCollection,
+    bootClasspath: org.gradle.api.provider.Provider<List<org.gradle.api.file.RegularFile>>,
+) {
+    val fixtureDir = layout.projectDirectory.dir("src/detektFixture/kotlin")
+    if (!fixtureDir.asFile.isDirectory) return
+    val report = layout.buildDirectory.file("reports/detekt/fixture.xml")
+    val detekt =
+        tasks.register<Detekt>("detektFixture") {
+            description = "Runs detekt on src/detektFixture, where every marked line must be reported."
+            source(fixtureDir)
+            classpath.setFrom(compileClasspath, bootClasspath)
+            config.setFrom(configFiles)
+            buildUponDefaultConfig = true
+            ignoreFailures = true
+            reports.xml.required.set(true)
+            reports.xml.outputLocation.set(report)
+            reports.html.required.set(false)
+            reports.sarif.required.set(false)
+            reports.txt.required.set(false)
+            reports.md.required.set(false)
+        }
+    val verify =
+        tasks.register("verifyDetektFixture") {
+            description = "Fails unless detekt reported every `// expect:` line in src/detektFixture."
+            dependsOn(detekt)
+            val sources = fixtureDir.asFileTree
+            inputs.files(sources)
+            inputs.file(report)
+            doLast { checkDetektFixture(sources.files, report.get().asFile) }
+        }
+    tasks.named("check").configure { dependsOn(verify) }
+}
+
+private val EXPECT = Regex("""//\s*expect:\s*(\w+)\s*$""")
+
+private fun checkDetektFixture(
+    sources: Set<java.io.File>,
+    report: java.io.File,
+) {
+    val xml = report.readText()
+    val missing =
+        sources.flatMap { file ->
+            file.readLines().mapIndexedNotNull { index, line ->
+                val rule = EXPECT.find(line)?.groupValues?.get(1) ?: return@mapIndexedNotNull null
+                val reported =
+                    Regex("""<error line="${index + 1}"[^>]*source="detekt\.$rule"""").containsMatchIn(
+                        xml.substringAfter("name=\"${file.absolutePath}\"").substringBefore("</file>"),
+                    )
+                if (reported) null else "${file.name}:${index + 1} expected $rule"
+            }
+        }
+    check(missing.isEmpty()) { "detekt did not report:\n" + missing.joinToString("\n") }
 }
 
 /** The plain `detekt` task would analyse main sources a second time without types; keep it on tests. */

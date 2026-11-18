@@ -302,6 +302,12 @@ tokens/*.json  (W3C Design Tokens format)
       └──► docs site on GitHub Pages
 ```
 
+The `hemisphere.design.tokens` Gradle plugin turns the token files into `ThemeTokens.kt` in
+`core:designsystem` on every build (`build-logic/convention/src/main/kotlin/ThemeTokensCodegen.kt`),
+so the app cannot drift from the tokens: edit the JSON, never the generated file. UI code reads
+`HemisphereTheme.colors`, `HemisphereTheme.typography`, `HemisphereSpacing`, `HemisphereRowHeight` and
+`HemisphereShapes`; detekt rejects `Color(...)`, `dp` and `sp` outside `core:designsystem`.
+
 The contrast check is `tools/contrast/check_contrast.py` (Python standard library). Run it with
 `python3 tools/contrast/check_contrast.py`; its tests run with
 `python3 -m unittest discover -s tools/contrast`. The `tokens` workflow runs both on PRs that touch
