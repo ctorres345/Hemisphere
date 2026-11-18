@@ -577,13 +577,18 @@ Rules:
 Navigation 3: the back stack is a list we own, which fits panes that each keep their own history.
 
 ```
-App back stack (app):        [ Browser ] → [ Settings ] → [ AccentPicker ]
-                                  │
+App back stack (app):        [ Access ] ⇢ [ Browser ] → [ Settings ] → [ AccentPicker ]
+                                                │
 Pane back stacks (browser):  left:  [ /Internal ] → [ /Internal/Download ]
                              right: [ /SD ] → [ /SD/ROMs ] → [ /SD/ROMs/GBA ]
 ```
 
 - Top-level screens (Browser, Settings, Trash) are `NavKey`s on the app back stack in `app`.
+- Access is a gate, not history (HEM-39, ADR 0002): until storage access is granted the stack is
+  only `[ Access ]`. A change of access replaces the whole stack, so a grant opens Browser and a
+  revoke (read again each time the app comes to the foreground) puts Access back. `StorageAccess`
+  lives in `core:fs` and its `StorageAccessState` in `core:model`, because `core:domain` cannot see
+  `core:platform`.
 - Each tab keeps its own back stack of `FsPath` in `TabState`, saved across process death
   (section 6.1). History is capped at 50 folders per tab, so saved state stays small.
 - Back restores the scroll anchor, so a gamepad user lands on the folder they left, not the

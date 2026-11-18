@@ -27,4 +27,7 @@ dependencies {
     api(project(":core:model"))
     api(libs.kotlinx.coroutines.core)
     implementation(project(":core:platform"))
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.process)
+    testImplementation(libs.robolectric)
 }
