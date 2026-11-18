@@ -1,15 +1,21 @@
 package io.github.ctorres345.hemisphere.feature.browser
 
+import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.SavedStateHandle
 import io.github.ctorres345.hemisphere.core.domain.files.GetFolderLockUseCase
 import io.github.ctorres345.hemisphere.core.domain.files.GetHomeFolderUseCase
 import io.github.ctorres345.hemisphere.core.domain.files.ObserveFolderUseCase
+import io.github.ctorres345.hemisphere.core.domain.settings.ObserveSettingsUseCase
+import io.github.ctorres345.hemisphere.core.domain.settings.SetLayoutPinUseCase
 import io.github.ctorres345.hemisphere.core.fs.LockedFolders
 import io.github.ctorres345.hemisphere.core.fs.testing.FakeVolumeRepository
 import io.github.ctorres345.hemisphere.core.fs.testing.InMemoryProvider
 import io.github.ctorres345.hemisphere.core.model.FsPath
+import io.github.ctorres345.hemisphere.core.model.Orientation
 import io.github.ctorres345.hemisphere.core.testing.FakeFolderViewRepository
+import io.github.ctorres345.hemisphere.core.testing.FakeSettingsRepository
 import io.github.ctorres345.hemisphere.core.testing.MainDispatcherRule
+import io.github.ctorres345.hemisphere.feature.browser.layout.BrowserWindow
 import io.github.ctorres345.hemisphere.feature.browser.pane.PaneId
 import io.github.ctorres345.hemisphere.feature.browser.pane.PaneIntent
 import io.github.ctorres345.hemisphere.feature.browser.pane.TabState
@@ -25,13 +31,22 @@ abstract class BrowserViewModelFixture {
     protected val home: FsPath = volumes.homeFolder()
     protected val music = home.child("Music")
 
-    protected fun viewModel(sdkInt: Int = LockedFolders.API_R) =
-        BrowserViewModel(
-            SavedStateHandle(),
-            GetHomeFolderUseCase(volumes),
-            ObserveFolderUseCase(volumes, FakeFolderViewRepository(), main.dispatcher),
-            GetFolderLockUseCase(LockedFolders(sdkInt)),
-        )
+    protected val settings = FakeSettingsRepository()
+
+    /** A 1080p handheld in landscape: Auto shows Dual. */
+    protected val handheld = BrowserWindow(Dp(960f), Orientation.Landscape)
+
+    protected fun viewModel(
+        sdkInt: Int = LockedFolders.API_R,
+        savedState: SavedStateHandle = SavedStateHandle(),
+    ) = BrowserViewModel(
+        savedState,
+        GetHomeFolderUseCase(volumes),
+        ObserveSettingsUseCase(settings),
+        ObserveFolderUseCase(volumes, FakeFolderViewRepository(), main.dispatcher),
+        GetFolderLockUseCase(LockedFolders(sdkInt)),
+        SetLayoutPinUseCase(settings),
+    )
 
     protected val BrowserViewModel.tab: TabState get() = state.value.activePane!!.tab
 

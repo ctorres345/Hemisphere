@@ -26,6 +26,13 @@ data class Settings(
     val layoutPinPortrait: LayoutPin = LayoutPin.Auto,
     val layoutPinLandscape: LayoutPin = LayoutPin.Auto,
 ) {
+    /** The user's pin for [orientation] on this device class. */
+    fun pinFor(orientation: Orientation): LayoutPin =
+        when (orientation) {
+            Orientation.Portrait -> layoutPinPortrait
+            Orientation.Landscape -> layoutPinLandscape
+        }
+
     companion object {
         const val DEFAULT_TRASH_RETENTION_DAYS = 30
         val DEFAULT = Settings()

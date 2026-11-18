@@ -186,6 +186,13 @@
       },
       "$description": "Top app bar height in touch mode (prototype .appbar)."
     },
+    "topBar": {
+      "$value": {
+        "value": 44,
+        "unit": "px"
+      },
+      "$description": "Height of the Dual layout's top bar above both panes (prototype .topbar)."
+    },
     "border": {
       "$value": {
         "value": 1,
@@ -234,6 +241,13 @@
         "unit": "px"
       },
       "$description": "Window width from which Auto layout shows two panes (design-system §2). Narrower windows use phone spacing, such as the hint footer's m gap (prototype .dev[data-d=phone] .hints)."
+    },
+    "activePaneBar": {
+      "$value": {
+        "value": 3,
+        "unit": "px"
+      },
+      "$description": "Height of the accent bar on top of the active pane's header in Dual (prototype .pane.active .phead::before)."
     }
   }
 }
