@@ -1,0 +1,60 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "786fb9d9d00a15bb0b35f81c6d74a7ea",
+    "entities": [
+      {
+        "tableName": "folder_view",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entry_key` TEXT NOT NULL, `path_lookup` TEXT NOT NULL, `sort_field` TEXT NOT NULL, `descending` INTEGER NOT NULL, PRIMARY KEY(`entry_key`))",
+        "fields": [
+          {
+            "fieldPath": "entryKey",
+            "columnName": "entry_key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pathLookup",
+            "columnName": "path_lookup",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sortField",
+            "columnName": "sort_field",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descending",
+            "columnName": "descending",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "entry_key"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_folder_view_path_lookup",
+            "unique": false,
+            "columnNames": [
+              "path_lookup"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_folder_view_path_lookup` ON `${TABLE_NAME}` (`path_lookup`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '786fb9d9d00a15bb0b35f81c6d74a7ea')"
+    ]
+  }
+}

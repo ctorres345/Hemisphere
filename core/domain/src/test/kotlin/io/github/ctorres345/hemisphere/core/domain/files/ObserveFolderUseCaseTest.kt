@@ -1,11 +1,13 @@
 package io.github.ctorres345.hemisphere.core.domain.files
 
+import io.github.ctorres345.hemisphere.core.data.user.FolderViewRepository
 import io.github.ctorres345.hemisphere.core.fs.FileSystemProvider
 import io.github.ctorres345.hemisphere.core.fs.testing.FakeVolumeRepository
 import io.github.ctorres345.hemisphere.core.fs.testing.InMemoryProvider
 import io.github.ctorres345.hemisphere.core.fs.testing.file
 import io.github.ctorres345.hemisphere.core.fs.testing.folder
 import io.github.ctorres345.hemisphere.core.model.Entry
+import io.github.ctorres345.hemisphere.core.model.FolderSort
 import io.github.ctorres345.hemisphere.core.model.FsError
 import io.github.ctorres345.hemisphere.core.model.FsPath
 import io.github.ctorres345.hemisphere.core.model.FsResult
@@ -13,7 +15,9 @@ import io.github.ctorres345.hemisphere.core.model.Listing
 import io.github.ctorres345.hemisphere.core.model.VolumeId
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -25,12 +29,22 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/** The default sort, in a flow that ends, so a listing's flow ends after its last batch. */
+private object DefaultSortOnly : FolderViewRepository {
+    override fun observe(folder: FsPath): Flow<FolderSort> = flowOf(FolderSort.DEFAULT)
+
+    override suspend fun setSort(
+        folder: FsPath,
+        sort: FolderSort,
+    ) = error("not used")
+}
+
 class ObserveFolderUseCaseTest {
     private val dispatcher = StandardTestDispatcher()
     private val home = FsPath.root(FakeVolumeRepository.TEST_VOLUME)
 
     private fun observe(provider: InMemoryProvider) =
-        ObserveFolderUseCase(FakeVolumeRepository(provider, home), dispatcher)
+        ObserveFolderUseCase(FakeVolumeRepository(provider, home), DefaultSortOnly, dispatcher)
 
     private fun test(block: suspend TestScope.() -> Unit) = runTest(dispatcher) { block() }
 
@@ -127,7 +141,7 @@ class ObserveFolderUseCaseTest {
                             awaitCancellation()
                         }
                 }
-            val useCase = ObserveFolderUseCase(FakeVolumeRepository(stalls, home), dispatcher)
+            val useCase = ObserveFolderUseCase(FakeVolumeRepository(stalls, home), DefaultSortOnly, dispatcher)
             val seen = mutableListOf<Listing>()
 
             val job = launch { useCase(home).collect { seen += it } }

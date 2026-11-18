@@ -13,6 +13,7 @@ import io.github.ctorres345.hemisphere.core.fs.testing.file
 import io.github.ctorres345.hemisphere.core.fs.testing.folder
 import io.github.ctorres345.hemisphere.core.model.Entry
 import io.github.ctorres345.hemisphere.core.model.FsPath
+import io.github.ctorres345.hemisphere.core.testing.FakeFolderViewRepository
 import io.github.ctorres345.hemisphere.core.testing.MainDispatcherRule
 import io.github.ctorres345.hemisphere.feature.browser.pane.PaneId
 import io.github.ctorres345.hemisphere.feature.browser.pane.PaneIntent
@@ -45,7 +46,7 @@ class BrowserSavedStateTest {
         BrowserViewModel(
             savedState,
             GetHomeFolderUseCase(volumes),
-            ObserveFolderUseCase(volumes, main.dispatcher),
+            ObserveFolderUseCase(volumes, FakeFolderViewRepository(), main.dispatcher),
             GetFolderLockUseCase(LockedFolders(LockedFolders.API_R)),
         )
 
