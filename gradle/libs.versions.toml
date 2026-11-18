@@ -34,6 +34,9 @@ konsist = "0.18.1"
 
 # Tests
 junit = "4.13.2"
+# Screenshot tests (HEM-13): Robolectric renders Compose on the JVM, Roborazzi compares the images.
+robolectric = "4.17"
+roborazzi = "1.78.0"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
@@ -58,6 +61,10 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 compose-lints = { module = "com.slack.lint.compose:compose-lint-checks", version.ref = "compose-lints" }
 konsist = { module = "com.lemonappdev:konsist", version.ref = "konsist" }
 junit = { module = "junit:junit", version.ref = "junit" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = "roborazzi" }
+roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose", version.ref = "roborazzi" }
+compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
 
 # build-logic only
 android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
@@ -78,6 +85,7 @@ hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-gradle" }
+roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
 
 # Convention plugins (build-logic)
 hemisphere-jvm-library = { id = "hemisphere.jvm.library" }
