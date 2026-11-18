@@ -26,6 +26,8 @@ class TokenWiringTest {
         assertEquals(ThemeTokens.rowDefault, HemisphereRowHeight.default)
         assertEquals(ThemeTokens.rowCompact, HemisphereRowHeight.compact)
         assertEquals(ThemeTokens.sizeAppBar, HemisphereSizes.appBar)
+        assertEquals(ThemeTokens.sizeTopBar, HemisphereSizes.topBar)
+        assertEquals(ThemeTokens.sizeActivePaneBar, HemisphereSizes.activePaneBar)
         assertEquals(ThemeTokens.sizeBorder, HemisphereSizes.border)
         assertEquals(RoundedCornerShape(ThemeTokens.radiusChip), HemisphereShapes.chip)
         assertEquals(RoundedCornerShape(ThemeTokens.radiusRow), HemisphereShapes.row)

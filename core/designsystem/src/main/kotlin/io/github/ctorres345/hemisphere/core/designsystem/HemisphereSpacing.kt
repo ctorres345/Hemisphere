@@ -27,6 +27,9 @@ object HemisphereSizes {
     /** The top app bar in touch mode (prototype `.appbar`). */
     val appBar: Dp = ThemeTokens.sizeAppBar
 
+    /** The Dual layout's top bar above both panes (prototype `.topbar`). */
+    val topBar: Dp = ThemeTokens.sizeTopBar
+
     /** The outline of buttons and fields (prototype `.btn`). */
     val border: Dp = ThemeTokens.sizeBorder
 
@@ -47,4 +50,7 @@ object HemisphereSizes {
 
     /** Window width from which Auto shows two panes; narrower windows use phone spacing. */
     val dualMinWidth: Dp = ThemeTokens.sizeDualMinWidth
+
+    /** The accent bar on top of the active pane's header in Dual (prototype `.pane.active .phead::before`). */
+    val activePaneBar: Dp = ThemeTokens.sizeActivePaneBar
 }
