@@ -65,7 +65,7 @@ Three layers, as in Google's guide to app architecture: UI, domain and data. Eac
 | `core:platform` | Small Android-side interfaces a screen needs directly: `ShareUriProvider` (section 3) | `core:model` |
 | `core:mvi` | The shared strict-MVI base (section 6.1): `MviViewModel` and the `Reducer` type. No Compose. | nothing in the app |
 | `core:domain` | Use cases (section 6.2) and the domain models that combine data from several sources, such as a folder listing with its saved sort | `core:model` (`api`); `core:fs`, `core:jobs`, `core:data` (`implementation`) |
-| `core:fs` | The file-system abstraction (section 3), volumes, the local and SAF providers, MediaStore scans; implements `ShareUriProvider` | `core:model`, `core:platform` |
+| `core:fs` | The file-system abstraction (section 3), volumes, the local and SAF providers, MediaStore scans; implements `ShareUriProvider` | `core:model`, `core:platform`; `core:fs-testing` (tests only) |
 | `core:jobs` | The job queue (section 4), conflicts, Trash (section 5), and the `state.db` Room database that stores them | `core:fs`, `core:data` |
 | `core:data` | The `user.db` Room database, DataStore settings, their repositories, the `VolumeStore` implementation | `core:fs` |
 | `core:fs-testing` | `InMemoryProvider`, `FakeVolumeRepository` and the abstract `FileSystemProviderContract` suite every provider must pass; used by test source sets only | `core:model`, `core:fs` |
@@ -100,10 +100,10 @@ Rules:
   if one does. `core:testing` declares `core:fs`, `core:fs-testing`, `core:jobs` and `core:data` as `api`, so test
   code (and only test code) gets the fakes and the data interfaces needed to build real use cases over them.
 - `core:fs-testing` lets the data layer test against `InMemoryProvider` without `core:testing`:
-  `core:jobs` and `core:data` may declare it as `testImplementation` (and only that). It depends on
-  `core:model` and `core:fs` and nothing else, so it never loops with them. `core:fs` may not use
-  it, because `core:fs-testing` is built on `core:fs`; when `LocalProvider` runs the contract
-  suite, that test lives where both are on the classpath, and this rule is revisited then.
+  `core:fs`, `core:jobs` and `core:data` may declare it as `testImplementation` (and only that). It
+  depends on `core:model` and `core:fs` and nothing else, so it never loops with them: `core:fs`'s
+  tests use it on top of `core:fs`'s main code, where `LocalProvider` (internal) runs the contract
+  suite.
 - `core:domain`, `core:fs`, `core:jobs`, `core:data` and `core:mvi` have no Compose dependency. They are
   tested on the JVM. `core:domain` is an Android library module (its dependencies are), but its
   own code imports nothing from `android.*`.

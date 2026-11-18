@@ -44,8 +44,9 @@ enum class WriteMode {
 
     /**
      * Create the entry, or replace its whole content. The old bytes are gone as soon as the sink is
-     * opened (the file is truncated at open, as `O_TRUNC` does), not when it is closed. To replace a
-     * file safely, write a temp name with `Create` and `rename` it over once `close()` returns.
+     * opened (the file is truncated at open, as `O_TRUNC` does), not when it is closed. `rename` and
+     * `move` never replace an entry, so a replace that keeps the old file until the new one is whole
+     * needs its own call; until then, write a temp name with `Create` and swap once `close()` returns.
      */
     Overwrite,
 

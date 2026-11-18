@@ -40,5 +40,6 @@ object FsModule {
             primaryRoot = Environment.getExternalStorageDirectory(),
             storageAccess = storageAccess,
             ioDispatcher = ioDispatcher,
+            mediaScanner = AndroidMediaScanner(context),
         )
 }

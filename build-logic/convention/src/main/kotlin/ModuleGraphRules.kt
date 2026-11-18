@@ -21,7 +21,8 @@ internal object ModuleGraphRules {
             ":core:platform" to setOf(MODEL),
             MVI to emptySet(),
             ":core:domain" to setOf(MODEL) + dataLayer,
-            ":core:fs" to setOf(MODEL, ":core:platform"),
+            // core:fs-testing is built on core:fs; core:fs takes it in tests only, for LocalProvider's contract test.
+            ":core:fs" to setOf(MODEL, ":core:platform", FS_TESTING),
             ":core:jobs" to setOf(MODEL, ":core:fs", ":core:data", FS_TESTING),
             ":core:data" to setOf(MODEL, ":core:fs", FS_TESTING),
             FS_TESTING to setOf(MODEL, ":core:fs"),

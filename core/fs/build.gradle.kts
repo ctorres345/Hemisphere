@@ -30,4 +30,6 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.process)
     testImplementation(libs.robolectric)
+    // The contract suite; core:fs-testing is built on core:fs, so tests only (architecture §2).
+    testImplementation(project(":core:fs-testing"))
 }

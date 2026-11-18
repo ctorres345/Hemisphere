@@ -160,16 +160,11 @@ class ModuleGraphRulesTest {
     }
 
     @Test
-    fun `core jobs and core data may use core fs-testing in tests only`() {
-        listOf(":core:jobs", ":core:data").forEach { module ->
+    fun `core fs, core jobs and core data may use core fs-testing in tests only`() {
+        listOf(":core:fs", ":core:jobs", ":core:data").forEach { module ->
             assertEquals(emptyList<String>(), violations(Edge(module, Scope.TEST, ":core:fs-testing", "testImplementation")))
             assertEquals(1, violations(Edge(module, Scope.IMPLEMENTATION, ":core:fs-testing", "implementation")).size)
         }
-    }
-
-    @Test
-    fun `core fs may not use core fs-testing, which is built on it`() {
-        assertEquals(1, violations(Edge(":core:fs", Scope.TEST, ":core:fs-testing", "testImplementation")).size)
     }
 
     @Test

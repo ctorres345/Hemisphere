@@ -29,18 +29,21 @@ val PrimaryVolume = VolumeId("primary")
  * served only while [storageAccess] is granted, and the app's own `home` folder under [appFilesDir].
  * In debug builds a new app home gets a few sample folders and files on its first listing, so
  * there is something to see. Release builds never seed ([BuildConfig.SEED_SAMPLES]) and start with
- * an empty app home. SD cards and picked folders come with later tickets.
+ * an empty app home. SD cards and picked folders come with later tickets. Changes on internal
+ * storage are passed to [mediaScanner], so other apps see them.
  */
 fun appHomeVolumes(
     appFilesDir: File,
     primaryRoot: File,
     storageAccess: StorageAccess,
     ioDispatcher: CoroutineDispatcher,
+    mediaScanner: MediaScanner = MediaScanner.None,
 ): VolumeRepository =
     AppHomeVolumeRepository(
         home = File(appFilesDir, "home"),
         seedMarker = File(appFilesDir, SampleContent.MARKER_NAME),
-        primaryRoot = primaryRoot,
+        primaryProvider =
+            LocalProvider(mapOf(PrimaryVolume to primaryRoot), ioDispatcher, mediaScanner = mediaScanner),
         storageAccess = storageAccess,
         ioDispatcher = ioDispatcher,
         seedSamples = BuildConfig.SEED_SAMPLES,
@@ -49,14 +52,15 @@ fun appHomeVolumes(
 internal class AppHomeVolumeRepository(
     private val home: File,
     private val seedMarker: File,
-    private val primaryRoot: File,
+    private val primaryProvider: FileSystemProvider,
     private val storageAccess: StorageAccess,
     private val ioDispatcher: CoroutineDispatcher,
     private val seedSamples: Boolean,
 ) : VolumeRepository {
-    private val primaryProvider = LocalProvider(mapOf(PrimaryVolume to primaryRoot), ioDispatcher)
     private val seedLock = Any()
     private var seeded = false
+
+    // MediaStore does not index the app's own files, so this one never scans.
     private val local = LocalProvider(mapOf(AppHomeVolume to home), ioDispatcher)
     private val provider =
         object : FileSystemProvider by local {
