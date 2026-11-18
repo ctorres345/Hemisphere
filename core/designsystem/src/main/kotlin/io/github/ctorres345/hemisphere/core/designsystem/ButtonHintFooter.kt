@@ -32,8 +32,8 @@ import androidx.compose.ui.unit.LayoutDirection
 
 /**
  * The gamepad button-hint footer: `Ⓐ Open  Ⓑ Back  Ⓧ Menu  Ⓨ Mark  L1/R1 Pane` (design §3). It shows only
- * in [InputMode.Gamepad]; in touch mode it takes no space. With [FaceButtonLayout.Nintendo] the glyphs swap
- * A↔B and X↔Y, so each action keeps its physical button.
+ * in [InputMode.Gamepad]; in touch and keyboard mode it takes no space. With [FaceButtonLayout.Nintendo]
+ * the glyphs swap A↔B and X↔Y, so each action keeps its physical button.
  *
  * L1 and R1 are physical buttons, so their pair stays in physical order (L1 left of R1) at the end of the
  * footer, also in RTL (design §13).
@@ -43,7 +43,7 @@ fun ButtonHintFooter(
     layout: FaceButtonLayout,
     modifier: Modifier = Modifier,
 ) {
-    if (LocalInputMode.current != InputMode.Gamepad) return
+    if (!LocalInputMode.current.showsHints) return
     val colors = HemisphereTheme.colors
     // Phone widths use the tighter m spacing, two-pane widths l (prototype .hints).
     val windowWidth =

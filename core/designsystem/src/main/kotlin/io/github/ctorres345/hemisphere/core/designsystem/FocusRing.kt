@@ -20,8 +20,9 @@ import androidx.compose.ui.node.invalidateDraw
 import androidx.compose.ui.platform.InspectorInfo
 
 /**
- * The shared gamepad focus ring (docs/design-system.md §3). It draws an `accent.focus` outline while the
- * element below it has focus, and only in [InputMode.Gamepad]: touch users never see it. Put it before
+ * The shared focus ring (docs/design-system.md §3). It draws an `accent.focus` outline while the
+ * element below it has focus, and only when the [InputMode] [shows focus][InputMode.showsFocus] (gamepad
+ * or keyboard): touch users never see it. Put it before
  * the focus target in the chain, for example `Modifier.focusRing().clickable { }`, so it sees that
  * target's focus.
  *
@@ -94,7 +95,7 @@ private class FocusRingNode(
         // An element with no area, or one smaller than the stroke for an inside ring (say, collapsing
         // in an animation), gets no ring: a negative outline size would make the shape throw.
         val minSize = if (placement == FocusRingPlacement.Inside) stroke else 0f
-        val show = focused && currentValueOf(LocalInputMode) == InputMode.Gamepad && size.minDimension > minSize
+        val show = focused && currentValueOf(LocalInputMode).showsFocus && size.minDimension > minSize
         val color = currentValueOf(LocalHemisphereColors).accent.focus
         if (show && fill) drawOutline(shape.createOutline(size, layoutDirection, this), color.copy(alpha = FILL_ALPHA))
         drawContent()

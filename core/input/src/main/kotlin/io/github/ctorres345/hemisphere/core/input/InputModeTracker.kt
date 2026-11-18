@@ -7,14 +7,15 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Tracks the last input kind used: last event wins (docs/design-system.md §3). Feed it every input event
- * with [onTouch] or [onGamepad]; [mode] changes only on the first event of the other kind.
+ * with [onInput] (or [onTouch], [onGamepad]); [mode] changes only on the first event of
+ * another kind.
  */
 class InputModeTracker(
     initial: InputMode = InputMode.Touch,
 ) {
     private val state = MutableStateFlow(initial)
 
-    /** The current mode. Touch hides focus rings; Gamepad shows them. */
+    /** The current mode. Touch hides focus rings; Gamepad and Keyboard show them. */
     val mode: StateFlow<InputMode> = state.asStateFlow()
 
     /** A touch (or pointer) event happened. */

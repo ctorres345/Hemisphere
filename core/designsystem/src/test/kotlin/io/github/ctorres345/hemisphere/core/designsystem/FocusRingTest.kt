@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.Dp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -29,7 +30,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** The ring's behaviour without goldens: it draws `accent.focus` only on a focused element in Gamepad mode. */
+/**
+ * The ring's behaviour without goldens: it draws `accent.focus` only on a focused element in Gamepad or
+ * Keyboard mode. Keyboard mode also keeps the button-hint footer away.
+ */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34])
@@ -81,6 +85,24 @@ class FocusRingTest {
     @Test
     fun `an element thinner than the stroke draws nothing and does not crash`() {
         assertEquals(0, ringPixels(InputMode.Gamepad, focused = true, size = HemisphereSizes.border))
+    }
+
+    @Test
+    fun `keyboard mode draws the ring on the focused element`() {
+        assertTrue(ringPixels(InputMode.Keyboard, focused = true) > 0)
+    }
+
+    @Test
+    fun `keyboard mode shows no button-hint footer and keeps touch rows`() {
+        compose.setContent {
+            HemisphereTheme {
+                CompositionLocalProvider(LocalInputMode provides InputMode.Keyboard) {
+                    ButtonHintFooter(layout = FaceButtonLayout.Xbox)
+                }
+            }
+        }
+        compose.onNodeWithText("Open").assertDoesNotExist()
+        assertEquals(HemisphereRowHeight.default, InputMode.Keyboard.rowHeight)
     }
 
     @Test

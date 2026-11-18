@@ -17,6 +17,7 @@ import io.github.ctorres345.hemisphere.core.designsystem.HemisphereShapes
 import io.github.ctorres345.hemisphere.core.designsystem.HemisphereSizes
 import io.github.ctorres345.hemisphere.core.designsystem.HemisphereTheme
 import io.github.ctorres345.hemisphere.core.designsystem.focusRing
+import io.github.ctorres345.hemisphere.core.designsystem.reportsInput
 import io.github.ctorres345.hemisphere.feature.browser.R
 
 @StringRes
@@ -67,6 +68,8 @@ internal fun SelectionMenu(
         shape = HemisphereShapes.sheet,
         containerColor = HemisphereTheme.colors.surfaceOverlay,
         border = BorderStroke(HemisphereSizes.border, HemisphereTheme.colors.borderDefault),
+        // The menu is its own window: report its input, so a tap in it hides the focus ring.
+        modifier = Modifier.reportsInput(),
     ) {
         onSelectAll?.let { selectAll ->
             val colors = MenuDefaults.itemColors(leadingIconColor = HemisphereTheme.colors.textSecondary)

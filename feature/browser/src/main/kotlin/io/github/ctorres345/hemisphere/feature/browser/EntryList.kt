@@ -54,7 +54,6 @@ import io.github.ctorres345.hemisphere.core.designsystem.HemisphereShapes
 import io.github.ctorres345.hemisphere.core.designsystem.HemisphereSizes
 import io.github.ctorres345.hemisphere.core.designsystem.HemisphereSpacing
 import io.github.ctorres345.hemisphere.core.designsystem.HemisphereTheme
-import io.github.ctorres345.hemisphere.core.designsystem.InputMode
 import io.github.ctorres345.hemisphere.core.designsystem.LocalInputMode
 import io.github.ctorres345.hemisphere.core.designsystem.LocalSteppedDown
 import io.github.ctorres345.hemisphere.core.designsystem.focusRing
@@ -72,8 +71,8 @@ import io.github.ctorres345.hemisphere.feature.browser.selection.selecting
 
 /**
  * The open folder's rows. Opening a folder hands the pane the anchor of the folder being left; when the
- * user comes back, the list scrolls to that anchor once its row has loaded, and a gamepad user gets
- * focus back on the row they opened (architecture §7).
+ * user comes back, the list scrolls to that anchor once its row has loaded, and a gamepad or keyboard
+ * user gets focus back on the row they opened (architecture §7).
  */
 @Composable
 internal fun EntryList(
@@ -140,8 +139,8 @@ internal fun EntryList(
 }
 
 /**
- * Scrolls to the open folder's anchor once its first visible row is listed; then, on a gamepad,
- * focuses the row opened.
+ * Scrolls to the open folder's anchor once its first visible row is listed; then, on a gamepad or a
+ * keyboard, focuses the row opened.
  */
 @Composable
 private fun RestoreAnchor(
@@ -163,7 +162,7 @@ private fun RestoreAnchor(
         if (first >= 0) listState.scrollToItem(first + offset, anchor.firstVisibleOffset)
         val focused = keys.indexOf(anchor.focusedRow) // -1 when the row left the listing: no row to focus
         val visible = listState.layoutInfo.visibleItemsInfo
-        if (inputMode == InputMode.Gamepad && focused >= 0 && visible.any { it.index == focused + offset }) {
+        if (inputMode.showsFocus && focused >= 0 && visible.any { it.index == focused + offset }) {
             focusAnchor.requestFocus()
         }
     }
