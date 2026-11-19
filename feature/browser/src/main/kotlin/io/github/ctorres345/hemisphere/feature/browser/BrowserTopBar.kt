@@ -29,6 +29,7 @@ internal fun BrowserTopBar(
     tab: TabState?,
     dual: Boolean,
     onIntent: (BrowserIntent) -> Unit,
+    onOpenSettings: () -> Unit,
 ) {
     // Single: the folder's app bar (prototype `.appbar`). Dual: the lower top bar above both panes,
     // with a border under it (prototype `.topbar`).
@@ -47,7 +48,17 @@ internal fun BrowserTopBar(
                     overflow = TextOverflow.Ellipsis,
                 )
             },
-            actions = { LayoutToggle(dual, onClick = { onIntent(BrowserIntent.ToggleLayout) }) },
+            actions = {
+                LayoutToggle(dual, onClick = { onIntent(BrowserIntent.ToggleLayout) })
+                // Until Places (HEM-56) holds the way to Settings, the top bar does.
+                IconButton(onClick = onOpenSettings, modifier = Modifier.focusRing()) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_settings),
+                        contentDescription = stringResource(R.string.browser_settings),
+                        tint = HemisphereTheme.colors.textSecondary,
+                    )
+                }
+            },
             expandedHeight = if (dual) HemisphereSizes.topBar else HemisphereSizes.appBar,
             windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top),
         )

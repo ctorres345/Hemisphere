@@ -304,6 +304,41 @@
         "unit": "px"
       },
       "$description": "Narrowest Dual pane whose selection header labels Copy and Move; narrower panes (a 640dp handheld) show icons only, so the count keeps its room."
+    },
+    "settingRow": {
+      "$value": {
+        "value": 56,
+        "unit": "px"
+      },
+      "$description": "Minimum height of a Settings row (prototype .set-row)."
+    },
+    "settingChip": {
+      "$value": {
+        "value": 36,
+        "unit": "px"
+      },
+      "$description": "Height of a choice chip in a Settings section (prototype .segs .chip)."
+    },
+    "swatch": {
+      "$value": {
+        "value": 48,
+        "unit": "px"
+      },
+      "$description": "Touch target of an accent swatch in Settings (prototype .sw)."
+    },
+    "swatchDot": {
+      "$value": {
+        "value": 36,
+        "unit": "px"
+      },
+      "$description": "The colored dot inside an accent swatch: the swatch inset by 6 (prototype .sw::before)."
+    },
+    "swatchRing": {
+      "$value": {
+        "value": 2,
+        "unit": "px"
+      },
+      "$description": "The ring around the selected accent swatch, inset 2 (prototype .sw[aria-checked] ::after)."
     }
   }
 }

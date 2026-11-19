@@ -41,6 +41,9 @@ data class HemisphereColors(
     val warning: Color,
     val success: Color,
     val accent: AccentColors,
+    /** Every accent in this theme, for a picker that shows them all (Settings). */
+    val accents: Map<Accent, AccentColors> = emptyMap(),
 )
 
-internal fun ThemePalette.withAccent(accent: Accent): HemisphereColors = colors.copy(accent = accents.getValue(accent))
+internal fun ThemePalette.withAccent(accent: Accent): HemisphereColors =
+    colors.copy(accent = accents.getValue(accent), accents = accents)

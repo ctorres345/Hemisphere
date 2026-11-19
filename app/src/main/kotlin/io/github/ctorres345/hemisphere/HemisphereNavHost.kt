@@ -16,6 +16,7 @@ import io.github.ctorres345.hemisphere.core.model.StorageAccessState
 import io.github.ctorres345.hemisphere.feature.browser.BrowserRoute
 import io.github.ctorres345.hemisphere.feature.browser.access.AccessRoute
 import io.github.ctorres345.hemisphere.feature.browser.access.AccessViewModel
+import io.github.ctorres345.hemisphere.feature.settings.SettingsRoute
 
 /**
  * The app back stack (architecture §7). It is saved across rotation and process death. Access is
@@ -34,7 +35,8 @@ fun HemisphereNavHost(
     val gate: NavKey = if (access.access == StorageAccessState.Granted) BrowserKey else AccessKey
     val backStack = rememberNavBackStack(gate)
     LaunchedEffect(gate) {
-        if (backStack.lastOrNull() != gate) {
+        // The gate is the stack's root: Settings opened over Browser stays after a restore.
+        if (backStack.firstOrNull() != gate) {
             backStack.clear()
             backStack.add(gate)
         }
@@ -51,7 +53,22 @@ fun HemisphereNavHost(
         entryProvider =
             entryProvider {
                 entry<AccessKey> { AccessRoute(viewModel = hiltViewModel()) }
-                entry<BrowserKey> { BrowserRoute(viewModel = hiltViewModel()) }
+                entry<BrowserKey> {
+                    BrowserRoute(
+                        viewModel = hiltViewModel(),
+                        onOpenSettings = {
+                            // A second press during the transition must not stack Settings twice.
+                            if (backStack.lastOrNull() != SettingsKey) backStack.add(SettingsKey)
+                        },
+                    )
+                }
+                entry<SettingsKey> {
+                    SettingsRoute(
+                        viewModel = hiltViewModel(),
+                        // A second press while Settings leaves must not pop the Browser too.
+                        onBack = { if (backStack.lastOrNull() == SettingsKey) backStack.removeLastOrNull() },
+                    )
+                }
             },
     )
 }

@@ -4,6 +4,7 @@
     <string name="browser_title_dual">Hemisphere</string>
     <string name="browser_switch_to_dual">Switch to Dual</string>
     <string name="browser_switch_to_single">Switch to Single</string>
+    <string name="browser_settings">Settings</string>
     <string name="browser_pane_left">Left pane</string>
     <string name="browser_pane_right">Right pane</string>
     <string name="browser_pane_active">%1$s, active</string>

@@ -30,6 +30,16 @@ dependencies {
     implementation(libs.kotlinx.serialization.core)
     implementation(libs.kotlinx.coroutines.core)
     testImplementation(libs.konsist)
+    // LiveThemeTest renders the app theme with Robolectric.
+    testImplementation(libs.robolectric)
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.compose.ui.test.manifest)
+}
+
+android {
+    // Robolectric reads the merged resources for LiveThemeTest.
+    testOptions.unitTests.isIncludeAndroidResources = true
 }
 
 // Konsist reads every module's sources from disk, so they are inputs of the tests that run it;
