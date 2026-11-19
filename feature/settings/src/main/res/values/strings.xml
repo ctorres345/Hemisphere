@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Settings</string>
+    <string name="settings_back">Back</string>
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_section_layout">Layout</string>
+    <string name="settings_section_controls">Controls</string>
+    <string name="settings_section_files">Files</string>
+    <string name="settings_section_about">About</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_hint">AMOLED uses a true black background</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_theme_amoled">AMOLED</string>
+    <string name="settings_accent">Accent color</string>
+    <string name="settings_accent_hint">Used for selection, focus and the active pane</string>
+    <string name="settings_accent_blue">Blue</string>
+    <string name="settings_accent_teal">Teal</string>
+    <string name="settings_accent_green">Green</string>
+    <string name="settings_accent_amber">Amber</string>
+    <string name="settings_accent_orange">Orange</string>
+    <string name="settings_accent_red">Red</string>
+    <string name="settings_accent_pink">Pink</string>
+    <string name="settings_accent_violet">Violet</string>
+    <string name="settings_layout_portrait">Portrait</string>
+    <string name="settings_layout_portrait_hint">Auto: Single below 600dp wide</string>
+    <string name="settings_layout_landscape">Landscape</string>
+    <string name="settings_layout_landscape_hint">Saved for this device only</string>
+    <string name="settings_layout_auto">Auto</string>
+    <string name="settings_layout_single">Single</string>
+    <string name="settings_layout_dual">Dual</string>
+    <string name="settings_face_buttons">Face buttons</string>
+    <string name="settings_face_buttons_hint">Swaps A↔B and X↔Y for Nintendo-style pads</string>
+    <string name="settings_face_auto">Auto</string>
+    <string name="settings_face_auto_resolved">Auto (%1$s)</string>
+    <string name="settings_face_xbox">Xbox</string>
+    <string name="settings_face_nintendo">Nintendo</string>
+    <string name="settings_trash">Keep deleted files</string>
+    <string name="settings_trash_hint">Then they are removed for good</string>
+    <plurals name="settings_trash_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+    <string name="settings_version">Version</string>
+    <string name="settings_licenses">Open-source licenses</string>
+    <string name="settings_licenses_hint">GPLv3, with parts under MIT</string>
+</resources>

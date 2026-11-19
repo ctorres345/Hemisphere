@@ -1,0 +1,13 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="16dp"
+    android:height="16dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- The prototype's "check" icon in a selected chip: a 3 stroke with round caps and joins. -->
+    <path
+        android:pathData="M5,12.5l4.5,4.5L19,7"
+        android:strokeWidth="3"
+        android:strokeColor="#FF000000"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

@@ -9,21 +9,26 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
-import io.github.ctorres345.hemisphere.core.designsystem.HemisphereTheme
 import io.github.ctorres345.hemisphere.core.designsystem.InputMode
 import io.github.ctorres345.hemisphere.core.designsystem.InputReporter
 import io.github.ctorres345.hemisphere.core.designsystem.LocalInputMode
 import io.github.ctorres345.hemisphere.core.designsystem.LocalInputReporter
+import io.github.ctorres345.hemisphere.core.domain.settings.ObserveSettingsUseCase
 import io.github.ctorres345.hemisphere.core.input.InputModeTracker
+import javax.inject.Inject
 
 /**
  * The only Activity. Hosts the app back stack ([HemisphereNavHost]) and tracks the last input used
- * (touch, gamepad or keyboard), which it provides to the UI as [LocalInputMode].
+ * (touch, gamepad or keyboard), which it provides to the UI as [LocalInputMode]. The theme follows the
+ * saved settings live ([HemisphereAppTheme]), with no Activity recreate.
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @Inject lateinit var observeSettings: ObserveSettingsUseCase
+
     private lateinit var inputModes: InputModeTracker
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,7 +39,8 @@ class MainActivity : ComponentActivity() {
         inputModes = InputModeTracker(InputMode.entries.firstOrNull { it.name == saved } ?: InputMode.Touch)
         setContent {
             val mode by inputModes.mode.collectAsStateWithLifecycle()
-            HemisphereTheme {
+            val settings = remember { observeSettings() }
+            HemisphereAppTheme(settings = settings) {
                 CompositionLocalProvider(LocalInputMode provides mode, LocalInputReporter provides popupInput) {
                     HemisphereNavHost()
                 }

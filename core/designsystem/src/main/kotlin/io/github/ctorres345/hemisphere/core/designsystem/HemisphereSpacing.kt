@@ -77,4 +77,19 @@ object HemisphereSizes {
 
     /** The narrowest Dual pane whose selection header labels Copy and Move; below it they are icons only. */
     val selectionLabelsMinWidth: Dp = ThemeTokens.sizeSelectionLabelsMinWidth
+
+    /** Minimum height of a Settings row (prototype `.set-row`). */
+    val settingRow: Dp = ThemeTokens.sizeSettingRow
+
+    /** A choice chip in a Settings section (prototype `.segs .chip`). */
+    val settingChip: Dp = ThemeTokens.sizeSettingChip
+
+    /** The touch target of an accent swatch (prototype `.sw`). */
+    val swatch: Dp = ThemeTokens.sizeSwatch
+
+    /** The colored dot inside an accent swatch (prototype `.sw::before`). */
+    val swatchDot: Dp = ThemeTokens.sizeSwatchDot
+
+    /** The ring around the selected accent swatch (prototype `.sw[aria-checked]::after`). */
+    val swatchRing: Dp = ThemeTokens.sizeSwatchRing
 }

@@ -54,10 +54,11 @@ import io.github.ctorres345.hemisphere.feature.browser.selection.selectionSummar
 @Composable
 fun BrowserRoute(
     viewModel: BrowserViewModel,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    BrowserScreen(state = state, onIntent = viewModel::onIntent, modifier = modifier)
+    BrowserScreen(state = state, onIntent = viewModel::onIntent, modifier = modifier, onOpenSettings = onOpenSettings)
 }
 
 /**
@@ -70,6 +71,7 @@ fun BrowserScreen(
     state: BrowserUiState,
     onIntent: (BrowserIntent) -> Unit,
     modifier: Modifier = Modifier,
+    onOpenSettings: () -> Unit = {},
 ) {
     val paneId = state.shell.activePane
     val tab = state.panes[paneId]?.tab
@@ -89,7 +91,7 @@ fun BrowserScreen(
             if (singleSelection != null) {
                 SelectionTopBar(singleSelection, tab?.folder?.name, onPaneIntent)
             } else {
-                BrowserTopBar(tab, dual, onIntent)
+                BrowserTopBar(tab, dual, onIntent, onOpenSettings)
             }
         },
         bottomBar = { singleSelection?.let { SelectionActionBar(it, onPaneIntent) } },
