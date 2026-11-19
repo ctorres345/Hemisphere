@@ -341,7 +341,29 @@ No Figma for now. Throwaway HTML mockups are fine for exploring.
 layout-mode toggle · button-hint footer
 
 **Content**: file row (3 densities) · grid tile · gallery tile · column header (sortable) ·
-empty state · loading skeleton · error state
+empty state · loading skeleton · error state · locked folder row · locked folder state
+
+**Locked folders** (`Android/data`, `Android/obb`, which Android keeps private; HEM-34, designed in
+HEM-73):
+
+- *Row*: the normal folder row (folder icon, name in the row's usual colors). A stroked lock icon
+  (`lock`, same 1.75 stroke as the other icons) stands where the item count would be, at
+  `size.lockIcon` = 18dp (tokens/base.json). Its line is as heavy as the folder icon's on the same row:
+  stroke 1.94 beside the 20dp icon, 1.75 in compact (gamepad) rows where the folder icon is 18dp too. It takes the
+  meta's color: `text.secondary`, and `text.tertiary` in the inactive pane. TalkBack reads "data,
+  folder, private".
+- *Actions*: a locked folder can be opened, to see why it is closed, and nothing else. Ⓨ, long-press,
+  a tap while selecting and Ⓧ each show "Android keeps this folder private" in a snackbar instead;
+  Select all leaves it out without a message. The `Android` folder itself behaves normally; what a
+  copy or delete of it does with the private folders inside is left to the job queue.
+- *State* (the folder opened): the empty state's layout. The lock icon, the heading "Android keeps
+  this folder private." and the line "Only the app that owns it can open it." Nothing can be put
+  in it: no New button, no New folder, New file or Select all in the menu, no Paste in the clipboard
+  tray (Single), and in Dual, Copy or Move to the pane showing it is refused with the same snackbar.
+  Nothing in the list takes focus, so focus starts on the first control, as in the empty state. The
+  hint footer shows only `Ⓐ Choose` and `Ⓑ Back` (plus the layout hint): no Menu or Mark.
+- The lock icon pairs (3:1 against every surface it sits on) are in the contrast matrix. A locked
+  row is never selected, but the `accent.tint` pair is kept as a guard in case that changes.
 
 **Selection and operations**: selection header · action bar · clipboard tray · progress chip ·
 queue sheet · conflict sheet · snackbar with Undo · confirm dialog (danger)

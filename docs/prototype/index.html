@@ -73,7 +73,7 @@ button { font: inherit; color: inherit; }
   --f-meta: 400 12px/16px var(--app-font); --f-caption: 400 11px/14px var(--app-font); --app-font: "Inter", Roboto, system-ui, sans-serif;
   /* space and shape: section 7 */
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --r-chip: 4px; --r-row: 8px; --r-sheet: 12px;
-  --row-h: 48px; --icon: 32px;
+  --row-h: 48px; --icon: 32px; --icon-lock: 18px; /* size.lockIcon */
 }
 .dev[data-t="dark"] {
   --canvas: #111214; --raised: #18191C; --overlay: #202226; --bd: #26282C; --bd-strong: #6C6E73;
@@ -132,6 +132,13 @@ button { font: inherit; color: inherit; }
 .nm { flex: 1; min-width: 0; display: flex; white-space: nowrap; font: var(--f-body); color: var(--t1); }
 .nm .a { overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; min-width: 1ch; }
 .nm .b { flex: none; }
+/* HEM-73: a folder Android keeps private (Android/data, Android/obb). The lock stands where the item count would,
+   in the meta's color, so it steps down in the inactive pane. A locked row is never selected. */
+.lock { display: grid; place-items: center; width: var(--icon-lock); height: var(--icon-lock); color: var(--t2); flex: none; }
+.lock svg { width: var(--icon-lock); height: var(--icon-lock); stroke-width: 1.94; } /* draws as heavy as the 20px row icon beside it */
+.dev[data-in="pad"] .lock svg { stroke-width: 1.75; } /* compact: the row icon is 18px too */
+.pane:not(.active) .lock { color: var(--t3); }
+.pane:not(.active) .row[aria-selected="true"] .lock { color: var(--t2); } /* as .meta; text.tertiary never sits on the tint */
 .meta { font: var(--f-meta); color: var(--t2); font-variant-numeric: tabular-nums; white-space: nowrap; flex: none; text-align: end; }
 .chk { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--bd-strong); display: grid; place-items: center; flex: none; }
 .chk svg { width: 14px; height: 14px; stroke-width: 3; opacity: 0; }
@@ -316,6 +323,7 @@ const P = {
   file: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/>',
   close: '<path d="M6 6l12 12M18 6L6 18"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
+  lock: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5M12 14.5v2"/>',
   copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
   cut: '<circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M7.8 16.2L18 4M16.2 16.2L6 4"/>',
   paste: '<rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3h6v2"/>',
@@ -356,7 +364,9 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;'
 const D = (n, count, date) => ({ n, t: 'folder', count, date });
 const F = (n, t, mb, date) => ({ n, t, mb, date });
 const FS = {
-  '/int': [D('Android', 4, '2 Sep 2026'), D('DCIM', 3, '16 Nov 2026'), D('Download', 7, '17 Nov 2026'), D('Music', 38, '30 Oct 2026'), D('Pictures', 112, '15 Nov 2026'), D('Documents', 9, '1 Nov 2026')],
+  '/int': [D('Android', 3, '2 Sep 2026'), D('DCIM', 3, '16 Nov 2026'), D('Download', 7, '17 Nov 2026'), D('Music', 38, '30 Oct 2026'), D('Pictures', 112, '15 Nov 2026'), D('Documents', 9, '1 Nov 2026')],
+  // Android keeps data and obb private (HEM-34): their rows show a lock and opening one explains why.
+  '/int/Android': [D('data', 0, '2 Sep 2026'), D('media', 2, '2 Sep 2026'), D('obb', 0, '2 Sep 2026')],
   '/int/Download': [D('ROMs', 7, '17 Nov 2026'), D('Firmware', 2, '3 Oct 2026'), F('Hemisphere-0.2.0-debug.apk', 'apk', 18.4, '17 Nov 2026'), F('controller-layouts.pdf', 'doc', 2.1, '12 Nov 2026'), F('Screenshot_20261116_2214.png', 'image', 1.6, '16 Nov 2026'), F('ost-sampler.flac', 'audio', 41.2, '9 Nov 2026'), F('saves-backup-2026-11.7z', 'archive', 96.8, '14 Nov 2026')],
   '/int/Download/ROMs': [D('GBA', 24, '10 Nov 2026'), D('SNES', 41, '10 Nov 2026'), D('PS1', 7, '2 Nov 2026'),
     F("Legend of the Twin Hemispheres - Director's Cut (USA, Europe) (Rev 2).zip", 'archive', 612, '16 Nov 2026'),
@@ -368,6 +378,8 @@ const FS = {
   '/sd/ROMs': [D('GBA', 3, '12 Mar 2026'), D('SNES', 12, '12 Mar 2026'), F('Pocket Racer Turbo (USA).gba', 'rom', 8, '12 Mar 2026'), F("Legend of the Twin Hemispheres - Director's Cut (USA, Europe) (Rev 2).zip", 'archive', 598, '4 Feb 2026'), F('Comet Courier (Europe).sfc', 'rom', 4, '19 Oct 2026')],
   '/sd/Movies': [F('trip-2026-08.mp4', 'video', 1830, '20 Aug 2026'), F('speedrun-pb.mp4', 'video', 412, '4 Oct 2026')]
 };
+const LOCKED = new Set(['/int/Android/data', '/int/Android/obb']);
+const isLocked = p => LOCKED.has(p);
 const ROOTS = { '/int': 'Internal storage', '/sd': 'SD card' };
 const rootOf = p => p.startsWith('/sd') ? '/sd' : '/int';
 const ls = p => FS[p] || [];
@@ -439,13 +451,16 @@ function rowHTML(pi, e, sel) {
   const id = `p${pi}-r-${e.n}`;
   const on = sel.includes(e.n);
   const nameHTML = middleCut(e.n);
-  const meta = e.t === 'folder' ? plural(e.count, 'item') : fmtSize(e.mb);
+  const locked = e.t === 'folder' && isLocked(tabOf(pi).path + '/' + e.n);
+  const meta = locked ? 'private' : e.t === 'folder' ? plural(e.count, 'item') : fmtSize(e.mb);
   const lead = sel.length ? `<span class="chk" aria-hidden="true">${ic('check')}</span>` : '';
   return `<div class="row" role="option" aria-selected="${on}" ${f(id)} data-pane="${pi}" data-act="row" data-n="${esc(e.n)}" aria-label="${esc(e.n)}, ${e.t === 'folder' ? 'folder, ' + meta : meta + ', ' + e.date}">
-    ${lead}<span class="ico" style="--c: var(--ft-${e.t})">${ic(e.t)}</span><span class="nm" dir="auto" title="${esc(e.n)}">${nameHTML}</span><span class="meta">${meta}</span></div>`;
+    ${lead}<span class="ico" style="--c: var(--ft-${e.t})">${ic(e.t)}</span><span class="nm" dir="auto" title="${esc(e.n)}">${nameHTML}</span>${locked ? `<span class="lock" aria-hidden="true">${ic('lock')}</span>` : `<span class="meta">${meta}</span>`}</div>`;
 }
 function listHTML(pi) {
   const t = tabOf(pi), items = ls(t.path);
+  // Same layout as the empty state: icon, heading, one line of help. Nothing in it takes focus; B goes back.
+  if (isLocked(t.path)) return `<div class="list" data-scroll="p${pi}"><div class="empty">${ic('lock')}<b>Android keeps this folder private.</b><span>Only the app that owns it can open it.</span></div></div>`;
   if (!items.length) return `<div class="list" data-scroll="p${pi}"><div class="empty">${ic('folder')}<b>This folder is empty</b><span>Paste or create a file here.</span></div></div>`;
   return `<div class="list${t.sel.length ? ' selecting' : ''}" role="listbox" aria-multiselectable="true" aria-label="${esc(lastSeg(t.path))}" data-scroll="p${pi}">${items.map(e => rowHTML(pi, e, t.sel)).join('')}</div>`;
 }
@@ -473,8 +488,8 @@ function singleHTML() {
     : `<div class="appbar"><button class="ib" ${f('drawer')} data-act="drawer" aria-label="Places">${ic('menu')}</button><div class="ttl">${esc(ROOTS[rootOf(t.path)])}</div>${qchipHTML()}<button class="ib" ${f('layout')} data-act="layout" aria-label="Switch to Dual">${ic('dual')}</button><button class="ib" ${f('search')} data-act="search" aria-label="Search this folder">${ic('search')}</button><button class="ib" ${f('more')} data-act="start" aria-label="More actions">${ic('more')}</button></div>`;
   const bottom = sel
     ? `<div class="actbar" role="toolbar" aria-label="Selection actions"><button class="act" ${f('a-copy')} data-act="copy">${ic('copy')}Copy</button><button class="act" ${f('a-cut')} data-act="cut">${ic('cut')}Cut</button><button class="act" ${f('a-rename')} data-act="toast" data-msg="Rename opens a dialog (not in this prototype)">${ic('rename')}Rename</button><button class="act" ${f('a-share')} data-act="toast" data-msg="Share opens the system sheet">${ic('share')}Share</button><button class="act danger" ${f('a-del')} data-act="delete">${ic('trash')}Delete</button></div>`
-    : S.clip ? `<div class="tray" role="region" aria-label="Clipboard">${ic('copy')}<div class="tx"><b>${plural(S.clip.names.length, 'item')}${S.clip.mb ? ' · ' + fmtSize(S.clip.mb) : ''}</b><span>${S.clip.mode === 'cut' ? 'Cut' : 'Copied'} from ${esc(lastSeg(S.clip.from))}</span></div><button class="btn primary" ${f('paste')} data-act="paste">${ic('paste')}Paste here</button><button class="ib" ${f('tray-x')} data-act="trayclose" aria-label="Clear clipboard">${ic('close')}</button></div>` : '';
-  const fab = !sel && !S.clip ? `<button class="fab" ${f('fab')} data-act="start" aria-label="New file or folder">${ic('plus')}</button>` : '';
+    : S.clip ? `<div class="tray" role="region" aria-label="Clipboard">${ic('copy')}<div class="tx"><b>${plural(S.clip.names.length, 'item')}${S.clip.mb ? ' · ' + fmtSize(S.clip.mb) : ''}</b><span>${S.clip.mode === 'cut' ? 'Cut' : 'Copied'} from ${esc(lastSeg(S.clip.from))}</span></div>${isLocked(t.path) ? '' : `<button class="btn primary" ${f('paste')} data-act="paste">${ic('paste')}Paste here</button>`}<button class="ib" ${f('tray-x')} data-act="trayclose" aria-label="Clear clipboard">${ic('close')}</button></div>` : '';
+  const fab = !sel && !S.clip && !isLocked(t.path) ? `<button class="fab" ${f('fab')} data-act="start" aria-label="New file or folder">${ic('plus')}</button>` : '';
   return `<div class="single">${head}${crumbsHTML(0)}<div class="pane active" data-pane="0" style="flex:1;min-height:0">${listHTML(0)}${fab}</div>${bottom}</div>`;
 }
 
@@ -534,6 +549,8 @@ function hintsHTML() {
   if (S.overlay) parts = [h('A', 'Choose'), h('B', 'Close')];
   else if (S.settings) parts = [h('A', 'Change'), h('B', 'Back')];
   else if (tabOf(curPane()).sel.length) parts = [h('A', 'Open'), h('B', 'Clear'), h('X', 'Menu'), h('Y', 'Mark')].concat(S.device === 'phone' ? [] : [h('Start', 'Actions', 1)]);
+  // No rows to open, mark or act on: Ⓐ presses whichever control has focus (the first one, as in the empty state).
+  else if (isLocked(tabOf(curPane()).path)) parts = [h('A', 'Choose'), h('B', 'Back')];
   else parts = [h('A', 'Open'), h('B', 'Back'), h('X', 'Menu'), h('Y', 'Mark')];
   const end = S.layout === 'dual' && !S.overlay && !S.settings ? `<span class="hint end"><span class="keypair" dir="ltr"><span class="gl sq">L1</span><span class="gl sq">R1</span></span>Pane</span>` : `<span class="hint end"><span class="gl sq">Select</span>${S.layout === 'dual' ? 'Single' : 'Dual'}</span>`;
   return `<div class="hints" aria-label="Gamepad buttons">${parts.join('')}${end}</div>`;
@@ -577,7 +594,9 @@ function overlayHTML() {
   if (S.overlay === 'menu' || S.overlay === 'start') {
     const items = S.overlay === 'menu'
       ? [['folder', 'Open', 'open'], ['copy', 'Copy', 'copy1'], ['cut', 'Cut', 'cut1'], ['rename', 'Rename', 'toast'], ['star', 'Add to bookmarks', 'toast'], ['props', 'Properties', 'toast'], ['trash', 'Delete', 'delete1', 'danger']]
-      : [['newfolder', 'New folder', 'toast'], ['file', 'New file', 'toast'], ['sort', 'Sort and view', 'toast'], ['selall', 'Select all', 'selall'], ['settings', 'Settings', 'settings']];
+      : [['newfolder', 'New folder', 'toast'], ['file', 'New file', 'toast'], ['sort', 'Sort and view', 'toast'], ['selall', 'Select all', 'selall'], ['settings', 'Settings', 'settings']]
+        // A locked folder can't be written or listed: no New or Select all there.
+        .filter(m => !isLocked(tabOf(curPane()).path) || !['newfolder', 'file', 'selall'].includes(m[0]));
     const pos = S.menuPos || { x: 40, y: 120 };
     return `${scrim}<div class="menu scope" role="menu" style="inset-inline-start:${pos.x}px;top:${pos.y}px">${S.overlay === 'menu' ? `<div class="sr">${esc(S.menuFor)}</div>` : ''}${items.map((m, i) => `<button class="menu-i ${m[3] || ''}" role="menuitem" ${f('m-' + i)} data-act="${m[2]}" data-msg="${m[1]} (not in this prototype)">${ic(m[0])}${m[1]}</button>`).join('')}</div>`;
   }
@@ -666,7 +685,10 @@ function openEntry(pi, name) {
   if (e.t === 'folder') { t.path = t.path + '/' + name; t.sel = []; S.focus = null; }
   else toast(`${name} opens in its viewer (not in this prototype)`);
 }
-function toggleSel(pi, name) { const t = tabOf(pi), i = t.sel.indexOf(name); i < 0 ? t.sel.push(name) : t.sel.splice(i, 1); }
+// A locked folder can be opened (to see why it is closed) but never marked, copied, moved, renamed or deleted.
+const LOCKED_MSG = 'Android keeps this folder private';
+const lockedRow = (pi, name) => isLocked(tabOf(pi).path + '/' + name);
+function toggleSel(pi, name) { if (lockedRow(pi, name)) { toast(LOCKED_MSG); return; } const t = tabOf(pi), i = t.sel.indexOf(name); i < 0 ? t.sel.push(name) : t.sel.splice(i, 1); }
 // Going up focuses the folder you came from (design-system.md section 14).
 function goUp(pi) { const t = tabOf(pi); if (t.path === rootOf(t.path)) return false; const child = lastSeg(t.path); t.path = t.path.slice(0, t.path.lastIndexOf('/')); S.focus = `p${pi}-r-${child}`; return true; }
 function startConflict(names, from, to, mode) {
@@ -693,15 +715,16 @@ function act(el) {
     case 'search': toast('Search is scoped to this folder (not in this prototype)'); break;
     case 'start': S.menuPos = menuAt(el, -180, 300); S.overlay = 'start'; S.focus = 'm-0'; break;
     case 'selclear': tabOf(curPane()).sel = []; break;
-    case 'selall': S.overlay = null; tabOf(curPane()).sel = ls(tabOf(curPane()).path).map(e => e.n); break;
+    case 'selall': S.overlay = null; tabOf(curPane()).sel = ls(tabOf(curPane()).path).map(e => e.n).filter(n => !lockedRow(curPane(), n)); break;
     case 'copy': case 'cut': { const t = tabOf(0); S.clip = { names: [...t.sel], from: t.path, mb: sizeOf(t.path, t.sel), mode: a }; t.sel = []; S.focus = 'drawer'; toast(`${plural(S.clip.names.length, 'item')} on the clipboard. Go to a folder and paste.`); break; }
     case 'copy1': case 'cut1': { S.overlay = null; const t = tabOf(curPane()), n = S.menuFor;
-      if (S.layout === 'dual') startConflict([n], t.path, tabOf(1 - S.active).path, a === 'cut1' ? 'move' : 'copy');
+      if (S.layout === 'dual' && isLocked(tabOf(1 - S.active).path)) toast(LOCKED_MSG);
+      else if (S.layout === 'dual') startConflict([n], t.path, tabOf(1 - S.active).path, a === 'cut1' ? 'move' : 'copy');
       else { S.clip = { names: [n], from: t.path, mb: sizeOf(t.path, [n]), mode: a === 'cut1' ? 'cut' : 'copy' }; } break; }
     case 'open': S.overlay = null; openEntry(curPane(), S.menuFor); break;
     case 'paste': { const c = S.clip, to = tabOf(0).path; if (to === c.from) { toast('Pick another folder to paste into'); break; } startConflict(c.names, c.from, to, c.mode === 'cut' ? 'move' : 'copy'); break; }
     case 'trayclose': S.clip = null; S.focus = null; break;
-    case 'copyother': case 'moveother': { const t = tabOf(S.active), names = [...t.sel]; t.sel = []; startConflict(names, t.path, tabOf(1 - S.active).path, a === 'moveother' ? 'move' : 'copy'); break; }
+    case 'copyother': case 'moveother': { if (isLocked(tabOf(1 - S.active).path)) { toast(LOCKED_MSG); break; } const t = tabOf(S.active), names = [...t.sel]; t.sel = []; startConflict(names, t.path, tabOf(1 - S.active).path, a === 'moveother' ? 'move' : 'copy'); break; }
     case 'delete': case 'delete1': { const t = tabOf(curPane()); const n = a === 'delete1' ? 1 : t.sel.length; t.sel = []; S.overlay = null; toast(`Moved ${n} item${n > 1 ? 's' : ''} to Trash`, true); break; }
     case 'undo': S.snack = null; toast('Restored from Trash'); break;
     case 'applyall': S.applyAll = !S.applyAll; break;
@@ -762,7 +785,8 @@ function button(b) {
       else if (S.settings) { closeSettings(); S.focus = null; }
       else if (!goUp(pi)) return;
       break;
-    case 'X': if (cur && cur.classList.contains('row')) { S.menuFor = cur.dataset.n; S.menuPos = menuAt(cur, 40, 330); S.overlay = 'menu'; S.focus = 'm-0'; } else return; break;
+    case 'X': if (cur && cur.classList.contains('row') && lockedRow(+cur.dataset.pane, cur.dataset.n)) { toast(LOCKED_MSG); break; }
+      if (cur && cur.classList.contains('row')) { S.menuFor = cur.dataset.n; S.menuPos = menuAt(cur, 40, 330); S.overlay = 'menu'; S.focus = 'm-0'; } else return; break;
     case 'Y': if (cur && cur.classList.contains('row')) toggleSel(+cur.dataset.pane, cur.dataset.n); else return; break;
     case 'L1': case 'R1': {
       if (S.layout !== 'dual' || S.overlay || S.settings) return;
