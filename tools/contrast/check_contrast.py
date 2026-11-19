@@ -208,6 +208,9 @@ def theme_pairs() -> list[Pair]:
         for t in ("semantic.danger", "semantic.warning", "semantic.success"):
             pairs.append(Pair(t, s, TEXT, "semantic label", "text"))
         pairs.append(Pair("border.strong", s, NON_TEXT, "control boundary"))
+        # The locked folder row's lock icon (HEM-73): the meta's color, stepped down in the inactive pane.
+        for t in ("text.secondary", "text.tertiary"):
+            pairs.append(Pair(t, s, NON_TEXT, "lock icon"))
     return pairs
 
 
@@ -223,6 +226,8 @@ def accent_pairs(accent: str) -> list[Pair]:
     # text.tertiary is never used on accent.tint (docs/design-system.md section 3).
     for t in ("text.primary", "text.secondary"):
         pairs.append(Pair(t, f"{a}.tint", TEXT, "selected row", "text"))
+    # A selected locked row keeps its lock in text.secondary, in either pane (HEM-73).
+    pairs.append(Pair("text.secondary", f"{a}.tint", NON_TEXT, "lock icon"))
     return pairs
 
 
