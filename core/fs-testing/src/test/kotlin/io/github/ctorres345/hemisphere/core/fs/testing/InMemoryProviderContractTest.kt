@@ -44,8 +44,6 @@ class InMemoryProviderContractTest(
 
     override fun newRoot(): FsPath = FsPath.root(volume, caseInsensitive, idAddressed)
 
-    // --- injected errors: values, never thrown -------------------------------------------------
-
     @Test
     fun `an injected error comes back as Err for every call`() =
         runTest {
@@ -107,8 +105,6 @@ class InMemoryProviderContractTest(
             assertEquals(FsResult.Err(FsError.Io("disk")), emitted.last())
         }
 
-    // --- stalls --------------------------------------------------------------------------------
-
     @Test
     fun `a stalled call waits until released and then completes`() =
         runTest {
@@ -152,8 +148,6 @@ class InMemoryProviderContractTest(
 
             assertEquals(0, batches.count { it is FsResult.Err })
         }
-
-    // --- space ---------------------------------------------------------------------------------
 
     @Test
     fun `free space is null until a capacity is set, then shrinks with the files`() =
@@ -214,8 +208,6 @@ class InMemoryProviderContractTest(
             sink.use { it.write("new".toByteArray()) }
             assertEquals("new", read(path))
         }
-
-    // --- stream faults -------------------------------------------------------------------------
 
     @Test
     fun `an injected read fault throws from the next source only`() =
@@ -281,8 +273,6 @@ class InMemoryProviderContractTest(
             assertEquals("new", read(root.child("b.txt")))
             assertEquals(listOf("b.txt"), names(root))
         }
-
-    // --- capabilities --------------------------------------------------------------------------
 
     @Test
     fun `turning a capability off makes its calls Unsupported`() =

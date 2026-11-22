@@ -112,7 +112,6 @@ internal fun EntryList(
                 )
             }
         }
-    // The prototype's .list ends with an s2 gap below the last row.
     val callbacks =
         remember(tab.folder, tab.listing.entries, onOpen, onIntent) {
             RowCallbacks(
@@ -126,6 +125,7 @@ internal fun EntryList(
     LazyColumn(
         state = listState,
         modifier = modifier.fillMaxSize(),
+        // The prototype's .list ends with an s2 gap below the last row.
         contentPadding = PaddingValues(bottom = HemisphereSpacing.s),
     ) {
         entryRows(

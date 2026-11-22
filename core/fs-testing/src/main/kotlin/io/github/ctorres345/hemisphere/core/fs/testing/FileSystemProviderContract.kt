@@ -54,8 +54,6 @@ abstract class FileSystemProviderContract {
     protected val root: FsPath by lazy { newRoot() }
     private val caps get() = provider.capabilities
 
-    // --- helpers -----------------------------------------------------------------------------
-
     protected fun <T> FsResult<T>.value(): T =
         when (this) {
             is FsResult.Ok -> value
@@ -104,8 +102,6 @@ abstract class FileSystemProviderContract {
 
     /** [path] looked up by its name only, so a provider that answered by ref is checked by name too. */
     private fun FsPath.byName(): FsPath = FsPath(volume, segments, null, caseInsensitive, idAddressed)
-
-    // --- stat, directories, listing ----------------------------------------------------------
 
     @Test
     fun `the root is a folder`() =
@@ -186,8 +182,6 @@ abstract class FileSystemProviderContract {
             assertEquals(listOf(FsResult.Err(FsError.NotFound)), provider.list(root.child("missing")).toList())
             assertEquals(listOf(FsResult.Err(FsError.Unsupported)), provider.list(root.child("file")).toList())
         }
-
-    // --- reading and writing -----------------------------------------------------------------
 
     @Test
     fun `bytes written are read back after close`() =
@@ -296,8 +290,6 @@ abstract class FileSystemProviderContract {
             }
             assertEquals("abc", read(root.child("a.txt")))
         }
-
-    // --- rename, move, copy ------------------------------------------------------------------
 
     @Test
     fun `rename keeps the content under the new name`() =
@@ -442,8 +434,6 @@ abstract class FileSystemProviderContract {
             assertError(FsError.Unsupported, provider.copy(path, root.child("b.txt")))
         }
 
-    // --- times, space, delete, observe -------------------------------------------------------
-
     @Test
     fun `setTimes changes the modified time when the provider can`() =
         runTest {
@@ -514,8 +504,6 @@ abstract class FileSystemProviderContract {
             assertNotNull("observe sent nothing within $WAIT_MS ms", seen)
         }
 
-    // --- cancellation and stale refs ---------------------------------------------------------
-
     @Test
     fun `a cancelled caller gets CancellationException, never an Err`() =
         runTest {
@@ -559,8 +547,6 @@ abstract class FileSystemProviderContract {
             assertEquals("b.txt", renamed.name)
             assertEquals(emptyList<String>(), names(root))
         }
-
-    // --- names: case and identity ------------------------------------------------------------
 
     @Test
     fun `names that differ only by case collide on a case-insensitive volume and not otherwise`() =
