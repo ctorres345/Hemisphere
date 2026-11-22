@@ -29,7 +29,8 @@ new module is added to it and to `docs/architecture.md` §2 in the same PR. Dete
   `GLOSSARY.md`.
 - Code rules: `docs/code-guidelines.md`. Read it before writing Kotlin.
 - Tickets: Jira project `HEM`. Template and labels: `docs/agents/`.
-- Branches: `cesar/<HEM-KEY>` off `mvp` (the default branch until the MVP ships); screenshots on `cesar/<HEM-KEY>-shots`. Until the MVP
+- Branches: `cesar/<HEM-KEY>` off `mvp` (the default branch until the MVP ships). PR screenshots go to the
+  monthly `evidence-YYYY-MM` release through NousFX `pr_evidence.py`, never a branch. Until the MVP
   ships, ticket PRs target `mvp`, not `main` (see `docs/agents/issue-tracker.md`).
 
 ## Rules
