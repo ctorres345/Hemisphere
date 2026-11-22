@@ -184,10 +184,7 @@ internal class LocalProvider(
     ): FsResult<Entry> =
         when {
             isUnsafeSegment(newName) -> FsResult.Err(FsError.InvalidName)
-
             path.segments.isEmpty() -> FsResult.Err(FsError.Unsupported)
-
-            // the volume root keeps its name
             else -> relocate(path, path.parent().child(newName))
         }
 
