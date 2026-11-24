@@ -40,7 +40,7 @@ konsist = "0.18.1"
 junit = "4.13.2"
 # Screenshot tests (HEM-13): Robolectric renders Compose on the JVM, Roborazzi compares the images.
 robolectric = "4.17"
-roborazzi = "1.78.0"
+roborazzi = "1.79.0"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
