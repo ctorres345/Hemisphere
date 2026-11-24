@@ -2,7 +2,7 @@
 # Toolchain. CI and local builds use the same JDK through the Gradle daemon JVM criteria
 # (gradle/gradle-daemon-jvm.properties) and the Kotlin toolchain below (ADR 0003: pinned, reproducible).
 jdk = "17"
-agp = "9.5.1"
+agp = "9.5.2"
 kotlin = "2.4.21"
 android-compileSdk = "36"
 android-minSdk = "26"
