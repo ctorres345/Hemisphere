@@ -39,7 +39,7 @@ konsist = "0.18.1"
 # Tests
 junit = "4.13.2"
 # Screenshot tests (HEM-13): Robolectric renders Compose on the JVM, Roborazzi compares the images.
-robolectric = "4.17"
+robolectric = "4.18.1"
 roborazzi = "1.78.0"
 
 [libraries]
